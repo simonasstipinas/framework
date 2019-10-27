@@ -1,5 +1,5 @@
-use types::types::{Validator, AttestationData};
 use types::primitives::Epoch;
+use types::types::{AttestationData, Validator};
 
 // Check if validator is active
 pub fn is_active_validator(validator: &Validator, epoch: Epoch) -> bool {
@@ -8,25 +8,27 @@ pub fn is_active_validator(validator: &Validator, epoch: Epoch) -> bool {
 
 // Check if validator is slashable
 pub fn is_slashable_validator(validator: &Validator, epoch: Epoch) -> bool {
-    !validator.slashed && validator.activation_epoch <= epoch && epoch < validator.withdrawable_epoch
+    !validator.slashed
+        && epoch < validator.withdrawable_epoch
+        && validator.activation_epoch <= epoch
 }
 
 // Check if ``data_1`` and ``data_2`` are slashable according to Casper FFG rules.
 pub fn is_slashable_attestation_data(data_1: &AttestationData, data_2: &AttestationData) -> bool {
-    (data_1 != data_2 && data_1.target.epoch == data_2.target.epoch) ||
-    (data_1.source.epoch < data_2.source.epoch && data_2.target.epoch < data_1.target.epoch)
+    (data_1 != data_2 && data_1.target.epoch == data_2.target.epoch)
+        || (data_1.source.epoch < data_2.source.epoch && data_2.target.epoch < data_1.target.epoch)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::u64::MAX as epoch_max;
     use bls::{PublicKey, SecretKey};
+    use std::u64::MAX as epoch_max;
     use types::primitives::H256;
     use types::types::{Checkpoint, Crosslink};
 
     fn default_validator() -> Validator {
-        Validator{
+        Validator {
             effective_balance: 0,
             slashed: false,
             activation_eligibility_epoch: epoch_max,
@@ -34,7 +36,7 @@ mod tests {
             exit_epoch: epoch_max,
             withdrawable_epoch: epoch_max,
             withdrawal_credentials: H256([0; 32]),
-            pubkey: PublicKey::from_secret_key(&SecretKey::random())
+            pubkey: PublicKey::from_secret_key(&SecretKey::random()),
         }
     }
 
@@ -44,16 +46,22 @@ mod tests {
             parent_root: H256([0; 32]),
             start_epoch: 0,
             end_epoch: 1,
-            data_root: H256([0; 32])
+            data_root: H256([0; 32]),
         }
     }
 
     fn default_attestation_data() -> AttestationData {
         AttestationData {
             beacon_block_root: H256([0; 32]),
-            source: Checkpoint{ epoch: 0, root: H256([0; 32]) },
-            target: Checkpoint{ epoch: 0, root: H256([0; 32]) },
-            crosslink: default_crosslink()
+            source: Checkpoint {
+                epoch: 0,
+                root: H256([0; 32]),
+            },
+            target: Checkpoint {
+                epoch: 0,
+                root: H256([0; 32]),
+            },
+            crosslink: default_crosslink(),
         }
     }
 
@@ -62,7 +70,7 @@ mod tests {
         let validator = default_validator();
         let epoch: u64 = 10;
 
-        assert!(is_active_validator(&validator, epoch) == false);
+        assert!(!is_active_validator(&validator, epoch));
     }
 
     #[test]
@@ -128,7 +136,7 @@ mod tests {
         let data_2 = default_attestation_data();
         data_1.target.root = H256([1; 32]);
 
-        assert!( is_slashable_attestation_data(&data_1, &data_2) );
+        assert!(is_slashable_attestation_data(&data_1, &data_2));
     }
 
     #[test]
@@ -136,7 +144,7 @@ mod tests {
         let data_1 = default_attestation_data();
         let data_2 = default_attestation_data();
 
-        assert!( !is_slashable_attestation_data(&data_1, &data_2) );
+        assert!(!is_slashable_attestation_data(&data_1, &data_2));
     }
 
     #[test]
@@ -148,7 +156,7 @@ mod tests {
         data_1.target.epoch = 4;
         data_2.target.epoch = 3;
 
-        assert!( is_slashable_attestation_data(&data_1, &data_2) );
+        assert!(is_slashable_attestation_data(&data_1, &data_2));
     }
 
     #[test]
@@ -162,7 +170,6 @@ mod tests {
         data_2.source.root = H256([1; 32]);
         data_2.target.root = H256([1; 32]);
 
-        assert!( !is_slashable_attestation_data(&data_1, &data_2) );
+        assert!(!is_slashable_attestation_data(&data_1, &data_2));
     }
-
 }
