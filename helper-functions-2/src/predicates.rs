@@ -6,6 +6,11 @@ pub fn is_active_validator(validator: &Validator, epoch: Epoch) -> bool {
     validator.activation_epoch <= epoch && epoch < validator.exit_epoch
 }
 
+// Check if validator is slashable
+pub fn is_slashable_validator(validator: &Validator, epoch: Epoch) -> bool {
+    !validator.slashed && validator.activation_epoch <= epoch && epoch < validator.withdrawable_epoch
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -53,5 +58,42 @@ mod tests {
         assert!(!is_active_validator(&validator, epoch));
     }
 
+    #[test]
+    fn test_already_slashed() {
+        let mut validator = default_validator();
+        validator.activation_epoch = 1;
+        validator.slashed = true;
+        let epoch: u64 = 10;
+
+        assert!(!is_slashable_validator(&validator, epoch));
+    }
+
+    #[test]
+    fn test_not_slashable_not_active() {
+        let validator = default_validator();
+        let epoch: u64 = 10;
+
+        assert!(!is_slashable_validator(&validator, epoch));
+    }
+
+    #[test]
+    fn test_not_slashable_withdrawable() {
+        let mut validator = default_validator();
+        validator.activation_epoch = 1;
+        validator.withdrawable_epoch = 9;
+        let epoch: u64 = 10;
+
+        assert!(!is_slashable_validator(&validator, epoch));
+    }
+
+    #[test]
+    fn test_slashable() {
+        let mut validator = default_validator();
+        validator.activation_epoch = 1;
+        validator.withdrawable_epoch = 11;
+        let epoch: u64 = 10;
+
+        assert!(is_slashable_validator(&validator, epoch));
+    }
 
 }
