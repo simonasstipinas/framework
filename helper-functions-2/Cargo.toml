@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 types = { path = "../types" }
 eth2_hashing = { path = "../utils/eth2_hashing"}
+bls = { path = '../utils/bls' }
 
 [dev-dependencies]
 rustc-hex = "2.0.1"
