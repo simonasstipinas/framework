@@ -71,5 +71,16 @@ mod process_slot_tests {
 
         assert_eq!(bs.slot, 1);
     }
+    #[test]
+    fn process_good_slot_2() {
+        let mut bs: BeaconState<MainnetConfig> = BeaconState {
+            slot: 3,
+            ..BeaconState::default()
+        };
+
+        process_slot(&mut bs, 0);
+
+        assert_eq!(bs.slot, 4);
+    }
 } 
 
