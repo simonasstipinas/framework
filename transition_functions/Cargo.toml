@@ -5,3 +5,5 @@ authors = ["pikaciu22x <bratcikov@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+types = { path = "../types" }
+eth2_ssz_types = { path = "../utils/ssz_types"}

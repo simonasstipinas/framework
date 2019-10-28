@@ -106,6 +106,12 @@ impl Signature {
     }
 }
 
+impl Default for Signature {
+    fn default() -> Self {
+        Signature::empty_signature()
+    }
+}
+
 impl_ssz!(Signature, BLS_SIG_BYTE_SIZE, "Signature");
 
 impl_tree_hash!(Signature, U96);

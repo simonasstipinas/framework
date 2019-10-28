@@ -20,7 +20,7 @@ pub struct Attestation<C: Config> {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Hash, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
+    Clone, PartialEq, Eq, Debug, Hash, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default
 )]
 pub struct AttestationData {
     pub beacon_block_root: H256,
@@ -88,7 +88,17 @@ pub struct BeaconBlockBody<C: Config> {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct BeaconBlockHeader {
     pub slot: Slot,
@@ -142,7 +152,7 @@ pub struct Eth1Data {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
+    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default
 )]
 pub struct Fork {
     pub previous_version: Version,
@@ -194,7 +204,7 @@ pub struct Transfer {
     pub signature: Signature,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, Default)]
 pub struct Validator {
     pub pubkey: PublicKey,
     pub withdrawal_credentials: H256,
