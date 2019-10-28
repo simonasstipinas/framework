@@ -64,7 +64,7 @@ pub struct AttesterSlashing<C: Config> {
     pub attestation_2: IndexedAttestation<C>,
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default)]
 pub struct BeaconBlock<C: Config> {
     pub slot: Slot,
     pub parent_root: H256,
@@ -74,7 +74,7 @@ pub struct BeaconBlock<C: Config> {
     pub signature: Signature,
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default)]
 pub struct BeaconBlockBody<C: Config> {
     pub randao_reveal: Signature,
     pub eth1_data: Eth1Data,

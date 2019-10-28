@@ -1,11 +1,11 @@
 // use crate::{config::*, consts, error::Error, primitives::*, types::*};
 // use ssz_types::{BitVector, FixedVector, VariableList};
 
-// #[cfg(test)]
-// mod process_slot {
-//     use types::{beacon_state::*, config::MainnetConfig};
-//     use crate::process_slot;
-//     // use crate::{config::*};
+#[cfg(test)]
+mod process_slot {
+    use types::{beacon_state::*, config::MainnetConfig};
+    use types::{types::*};
+    // use crate::{config::*};
 
 //     #[test]
 //     fn process_good_slot() {
@@ -13,9 +13,14 @@
 //             ..BeaconState::default()
 //         };
 
-//         process_slot<MainnetConfig>(&mut bs, 0);
-
-
-//     }
-// } 
+        let mut bs: BeaconState<MainnetConfig> = BeaconState {
+            ..BeaconState::default()
+        };
+        let bb: BeaconBlock<MainnetConfig> = BeaconBlock{
+            ..BeaconBlock::default()
+        };
+        assert!(bs.slot == bb.slot);
+       // assert_eq!(2 + 2, 4);
+    }
+} 
 
