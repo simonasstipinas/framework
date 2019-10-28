@@ -5,10 +5,6 @@ authors = ["pikaciu22x <bratcikov@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-<<<<<<< HEAD
-types = { path = "../types" }
-eth2_ssz_types = { path = "../utils/ssz_types"}
-=======
 bls = { path = "../utils/bls" }
 integer-sqrt = "0.1"
 itertools = "0.8"
@@ -19,4 +15,3 @@ tree_hash = "0.1"
 tree_hash_derive = "0.2"
 types = { path = "../types" }
 rayon = "1.0"
->>>>>>> 65773c7212cb9034187d8edf250d12d842dbd425

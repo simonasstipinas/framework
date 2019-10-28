@@ -1070,9 +1070,6 @@ dependencies = [
 name = "transition_functions"
 version = "0.1.0"
 dependencies = [
-<<<<<<< HEAD
- "eth2_ssz_types 0.2.0",
-=======
  "bls 0.1.0",
  "eth2_ssz_types 0.2.0",
  "integer-sqrt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1082,7 +1079,6 @@ dependencies = [
  "rayon 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tree_hash 0.1.1",
  "tree_hash_derive 0.2.0",
->>>>>>> 65773c7212cb9034187d8edf250d12d842dbd425
  "types 0.1.0",
 ]
 
