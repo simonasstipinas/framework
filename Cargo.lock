@@ -1072,6 +1072,7 @@ version = "0.1.0"
 dependencies = [
  "bls 0.1.0",
  "eth2_ssz_types 0.2.0",
+ "ethereum-types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "integer-sqrt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",

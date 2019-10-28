@@ -1,48 +1,75 @@
-// use crate::*;
+use crate::*;
+use types::{ beacon_state::*, config::MainnetConfig};
 // use types::*;
+use ethereum_types::{H256 as Hash256};
 
-// pub fn process_slot<T: EthSpec>(
-//     state: &mut BeaconState<T>,
-//     genesis_slot: u64,
-// ) -> Result<(), Error> {
+#[derive(Debug, PartialEq)]
+pub enum Error {
+    
+}
 
-//     cache_state(state)?;
+pub fn process_slot(
+    state: &mut BeaconState<MainnetConfig>,
+    genesis_slot: u64,
+) -> Result<(), Error> {
 
-//     if state.slot > genesis_slot && (state.slot + 1) % T::slots_per_epoch() == 0 {
-//         // ! implement per_epoch_processing
-//         // per_epoch_processing(state, spec)?;
-//     }
+    cache_state(state)?;
 
-//     state.slot += 1;
+    if state.slot > genesis_slot /*&& (state.slot + 1) % T::slots_per_epoch() == 0*/ {
+        // ! implement per_epoch_processing
+        // per_epoch_processing(state, spec)?;
+    }
 
-//     Ok(())
-// }
+    state.slot += 1;
 
-// fn cache_state<T: EthSpec>(state: &mut BeaconState<T>) -> Result<(), Error> {
-//     let previous_state_root = state.update_tree_hash_cache()?;
+    Ok(())
+}
 
-//     // ! FIX THIS :( @pikaciu22x
-//     // Note: increment the state slot here to allow use of our `state_root` and `block_root`
-//     // getter/setter functions.
-//     //
-//     // This is a bit hacky, however it gets the job safely without lots of code.
-//     let previous_slot = state.slot;
-//     state.slot += 1;
+fn cache_state(state: &mut BeaconState<MainnetConfig>) -> Result<(), Error> {
+    //?let previous_state_root = state.update_tree_hash_cache()?;
 
-//     // Store the previous slot's post state transition root.
-//     state.set_state_root(previous_slot, previous_state_root)?;
+    // ! FIX THIS :( @pikaciu22x
+    // Note: increment the state slot here to allow use of our `state_root` and `block_root`
+    // getter/setter functions.
+    //
+    // This is a bit hacky, however it gets the job safely without lots of code.
+    let previous_slot = state.slot;
+    state.slot += 1;
 
-//     // Cache latest block header state root
-//     if state.latest_block_header.state_root == Hash256::zero() {
-//         state.latest_block_header.state_root = previous_state_root;
-//     }
+    // Store the previous slot's post state transition root.
+    //?state.set_state_root(previous_slot, previous_state_root)?;
 
-//     // Cache block root
-//     let latest_block_root = state.latest_block_header.canonical_root();
-//     state.set_block_root(previous_slot, latest_block_root)?;
+    // Cache latest block header state root
+    if state.latest_block_header.state_root == Hash256::zero() {
+        // state.latest_block_header.state_root = previous_state_root;
+    }
 
-//     // Set the state slot back to what it should be.
-//     state.slot -= 1;
+    // Cache block root
+    //? let latest_block_root = state.latest_block_header.canonical_root();
+    //? state.set_block_root(previous_slot, latest_block_root)?;
 
-//     Ok(())
-// }
+    // Set the state slot back to what it should be.
+    state.slot -= 1;
+
+    Ok(())
+}
+
+
+#[cfg(test)]
+mod process_slot_tests {
+    use types::{beacon_state::*, config::MainnetConfig};
+    // use crate::{config::*};
+    use super::*;
+
+    #[test]
+    fn process_good_slot() {
+        let mut bs: BeaconState<MainnetConfig> = BeaconState {
+            ..BeaconState::default()
+        };
+
+        process_slot(&mut bs, 0);
+
+        assert_eq!(bs.slot, 1);
+    }
+} 
+
