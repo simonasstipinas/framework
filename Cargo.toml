@@ -8,7 +8,7 @@ members = [
     'utils/ssz_types',
     'utils/tree_hash',
     'utils/tree_hash_derive',
-    'framework/transition_functions',
+    'modules/transition_functions',
 ]
 
 [profile.release]
