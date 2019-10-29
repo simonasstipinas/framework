@@ -91,21 +91,22 @@ impl<C: Config> BeaconState<C>{
     }
 
     pub fn update_tree_hash_cache(&mut self) -> Result<Hash256, Error> {
-        // TODO(#440): re-enable cached tree hash
         Ok(Hash256::from_slice(&self.tree_hash_root()))
     }
 
     fn get_latest_block_roots_index(&self, slot: Slot) -> Result<usize, Error> {
         if (slot < self.slot) && (self.slot <= slot + self.block_roots.len() as u64) {
-            Ok(slot.as_usize() % self.block_roots.len())
+            let b = slot as usize;
+            Ok(b % self.block_roots.len())
         } else {
             Err(Error::SlotOutOfBounds)
         }
     }
 
     fn get_latest_state_roots_index(&self, slot: Slot) -> Result<usize, Error> {
-        if (slot < self.slot) && (self.slot <= slot + Slot::from(self.state_roots.len())) {
-            Ok(slot.as_usize() % self.state_roots.len())
+        if (slot < self.slot) && (self.slot <= slot + Slot::from(self.state_roots.len() as u64)) {
+            let b = slot as usize;
+            Ok(b % self.state_roots.len())
         } else {
             Err(Error::SlotOutOfBounds)
         }
