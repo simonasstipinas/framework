@@ -26,6 +26,14 @@ pub fn bls_verify_multiple(pubkeys: &[&PublicKeyBytes], messages: &[&[u8]],
     Ok(sg.verify_multiple(messages, domain, &pks.iter().collect::<Vec<_>>()))
 }
 
+pub fn bls_aggregate_pubkeys(pubkeys: &[PublicKey]) -> AggregatePublicKey {
+    let mut aggr_pk = AggregatePublicKey::new();
+    for pk in pubkeys {
+        aggr_pk.add(pk);        
+    }
+    aggr_pk
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
