@@ -4,6 +4,7 @@ use ssz_types::{BitVector, FixedVector, VariableList};
 use tree_hash_derive::TreeHash;
 use ethereum_types::{H256 as Hash256};
 use crate::{config::*, consts, primitives::*, types::*};
+use types::{types::*};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -85,6 +86,8 @@ pub struct BeaconState<C: Config> {
 }
 
 impl<C: Config> BeaconState<C>{
+    use tree_hash::TreeHash;
+
 
     pub fn canonical_root(&self) -> Hash256 {
         Hash256::from_slice(&self.tree_hash_root()[..])
@@ -105,7 +108,7 @@ impl<C: Config> BeaconState<C>{
         &mut self,
         slot: Slot,
         block_root: Hash256,
-    ) -> Result<(), BeaconStateError> {
+    ) -> Result<(), Error> {
         let i = self.get_latest_block_roots_index(slot)?;
         self.block_roots[i] = block_root;
         Ok(())
