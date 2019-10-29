@@ -2,7 +2,7 @@ use crate::*;
 use types::{ beacon_state::*, config::MainnetConfig};
 // use types::*;
 use ethereum_types::{H256 as Hash256};
-
+use types::{types::*};
 #[derive(Debug, PartialEq)]
 pub enum Error {
     
