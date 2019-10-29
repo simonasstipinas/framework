@@ -5,6 +5,7 @@ use tree_hash_derive::TreeHash;
 use ethereum_types::{H256 as Hash256};
 use crate::{config::*, consts, primitives::*, types::*};
 use tree_hash::TreeHash;
+use types::{types::*};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -86,6 +87,8 @@ pub struct BeaconState<C: Config> {
 }
 
 impl<C: Config> BeaconState<C>{
+    use tree_hash::TreeHash;
+
 
     pub fn canonical_root(&self) -> Hash256 {
         Hash256::from_slice(&self.tree_hash_root()[..])
