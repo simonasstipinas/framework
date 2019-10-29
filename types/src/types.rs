@@ -1,5 +1,6 @@
 //temporary Lighthouse SSZ and hashing implementation
 use bls::PublicKeyBytes;
+use ethereum_types::H256 as Hash256;
 use serde::{Deserialize, Serialize};
 use ssz_derive::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
@@ -20,7 +21,18 @@ pub struct Attestation<C: Config> {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Hash, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Hash,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct AttestationData {
     pub beacon_block_root: H256,
@@ -64,7 +76,9 @@ pub struct AttesterSlashing<C: Config> {
     pub attestation_2: IndexedAttestation<C>,
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default)]
+#[derive(
+    Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+)]
 pub struct BeaconBlock<C: Config> {
     pub slot: Slot,
     pub parent_root: H256,
@@ -74,7 +88,9 @@ pub struct BeaconBlock<C: Config> {
     pub signature: Signature,
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default)]
+#[derive(
+    Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+)]
 pub struct BeaconBlockBody<C: Config> {
     pub randao_reveal: Signature,
     pub eth1_data: Eth1Data,
@@ -106,6 +122,12 @@ pub struct BeaconBlockHeader {
     pub state_root: H256,
     pub body_root: H256,
     pub signature: Signature,
+}
+
+impl BeaconBlockHeader {
+    pub fn canonical_root(&self) -> Hash256 {
+        Hash256::from_slice(&self.tree_hash_root()[..])
+    }
 }
 
 #[derive(
@@ -152,7 +174,17 @@ pub struct Eth1Data {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct Fork {
     pub previous_version: Version,
