@@ -1,8 +1,12 @@
-pub use eth2_hashing::hash;
 pub use bls::{AggregateSignature, AggregatePublicKey, PublicKeyBytes, SignatureBytes, 
               SecretKey, PublicKey, Signature};
 use ssz::{DecodeError};
 use std::convert::TryInto;
+use ring::digest::{digest, SHA256};
+
+pub fn hash(input: &[u8]) -> Vec<u8> {
+    digest(&SHA256, input).as_ref().into()
+}
 
 pub fn bls_verify(pubkey: &PublicKeyBytes, message: &[u8], signature: &SignatureBytes, 
                     domain: u64) -> Result<bool, DecodeError> {
