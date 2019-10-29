@@ -7,11 +7,11 @@ mod process_slot {
     use types::{types::*};
     // use crate::{config::*};
 
-//     #[test]
-//     fn process_good_slot() {
-//         let mut bs: BeaconState<MainnetConfig> = BeaconState {
-//             ..BeaconState::default()
-//         };
+    #[test]
+    fn process_good_slot() {
+        let mut bs: BeaconState<MainnetConfig> = BeaconState {
+            ..BeaconState::default()
+        };
 
         let mut bs: BeaconState<MainnetConfig> = BeaconState {
             ..BeaconState::default()
