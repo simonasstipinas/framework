@@ -1,5 +1,6 @@
 use super::PublicKey;
 use milagro_bls::{AggregatePublicKey as RawAggregatePublicKey, G1Point};
+use ssz::{DecodeError};
 
 /// A BLS aggregate public key.
 ///
@@ -36,6 +37,14 @@ impl AggregatePublicKey {
 
     pub fn into_raw(self) -> RawAggregatePublicKey {
         self.0
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, DecodeError> {
+        let pubkey = RawAggregatePublicKey::from_bytes(&bytes).map_err(|_| {
+            DecodeError::BytesInvalid(format!("Invalid PublicKey bytes: {:?}", bytes).to_string())
+        })?;
+
+        Ok(AggregatePublicKey(pubkey))
     }
 
     /// Return a hex string representation of this key's bytes.

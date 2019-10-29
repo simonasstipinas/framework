@@ -12,9 +12,18 @@ pub fn bls_verify(pubkey: &PublicKeyBytes, message: &[u8], signature: &Signature
     Ok(sg.verify(message, domain, &pk))
 }
 
-pub fn bls_verify_aggregate(pubkey: &PublicKeyBytes, message: &[u8], signature: &SignatureBytes, 
-                    domain: u64) -> bool {
-    false
+pub fn bls_verify_multiple(pubkeys: &[&PublicKeyBytes], messages: &[&[u8]], 
+        signature: &SignatureBytes, domain: u64) -> Result<bool, DecodeError> {
+
+    let sg = AggregateSignature::from_bytes(signature.as_bytes().as_slice())?;
+
+    let mut pks: Vec<AggregatePublicKey> = Vec::new();
+    for pk_bytes in pubkeys {
+        let pk = AggregatePublicKey::from_bytes(pk_bytes.as_bytes().as_slice())?;
+        pks.push(pk);
+    }
+
+    Ok(sg.verify_multiple(messages, domain, &pks.iter().collect::<Vec<_>>()))
 }
 
 #[cfg(test)]
@@ -96,7 +105,6 @@ mod tests {
         ];
         // Load some keys from a serialized secret key.
         let sk = SecretKey::from_bytes(&sk_bytes).unwrap();
-        let pk = PublicKey::from_secret_key(&sk);
         let domain: u64 = 0;
         // Sign a message
         let message = "cats".as_bytes();
@@ -122,7 +130,6 @@ mod tests {
         // Load some keys from a serialized secret key.
         let sk = SecretKey::from_bytes(&sk_bytes).unwrap();
         let pk = PublicKey::from_secret_key(&sk);
-        let domain: u64 = 0;
 
         let pk_bytes = PublicKeyBytes::from_bytes(pk.as_bytes().as_slice()).unwrap();
         let sg_bytes = SignatureBytes::from_bytes(&[1; 96]).unwrap();
