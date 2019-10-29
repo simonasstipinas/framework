@@ -1,6 +1,6 @@
 use super::PublicKey;
 use milagro_bls::{AggregatePublicKey as RawAggregatePublicKey, G1Point};
-use ssz::{DecodeError};
+use ssz::DecodeError;
 
 /// A BLS aggregate public key.
 ///
