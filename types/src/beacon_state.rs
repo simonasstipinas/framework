@@ -3,8 +3,7 @@ use ssz_derive::{Decode, Encode};
 use ssz_types::{BitVector, FixedVector, VariableList};
 use tree_hash_derive::TreeHash;
 use ethereum_types::{H256 as Hash256};
-use crate::{config::*, consts, primitives::*, types::*};
-use types::{types::*};
+use crate::{config::*, consts::*, primitives::*, types::*};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -86,19 +85,16 @@ pub struct BeaconState<C: Config> {
 }
 
 impl<C: Config> BeaconState<C>{
-    use tree_hash::TreeHash;
-
-
     pub fn canonical_root(&self) -> Hash256 {
         Hash256::from_slice(&self.tree_hash_root()[..])
     }
 
-    pub fn update_tree_hash_cache(&mut self) -> Result<Hash256, Error> {
+    pub fn update_tree_hash_cache(&mut self) -> Result<Hash256, BeaconStateError> {
         // TODO(#440): re-enable cached tree hash
         Ok(Hash256::from_slice(&self.tree_hash_root()))
     }
 
-    pub fn set_state_root(&mut self, slot: Slot, state_root: Hash256) -> Result<(), Error> {
+    pub fn set_state_root(&mut self, slot: Slot, state_root: Hash256) -> Result<(), BeaconStateError> {
         let i = self.get_latest_state_roots_index(slot)?;
         self.state_roots[i] = state_root;
         Ok(())
@@ -113,4 +109,21 @@ impl<C: Config> BeaconState<C>{
         self.block_roots[i] = block_root;
         Ok(())
     }
+
+    fn get_latest_block_roots_index(&self, slot: Slot) -> Result<usize, Error> {
+        if (slot < self.slot) && (self.slot <= slot + self.block_roots.len() as u64) {
+            Ok(slot.as_usize() % self.block_roots.len())
+        } else {
+            Err(BeaconStateError::SlotOutOfBounds)
+        }
+    }
+
+    fn get_latest_state_roots_index(&self, slot: Slot) -> Result<usize, Error> {
+        if (slot < self.slot) && (self.slot <= slot + Slot::from(self.state_roots.len())) {
+            Ok(slot.as_usize() % self.state_roots.len())
+        } else {
+            Err(BeaconStateError::SlotOutOfBounds)
+        }
+    }
+
 }
