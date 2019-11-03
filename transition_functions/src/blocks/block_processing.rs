@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 fn process_voluntary_exit(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index];
     // Verify the validator is active
@@ -89,7 +88,7 @@ fn process_randao(state: BeaconState, body: BeaconBlockBody) {
     //!mix = xor(get_randao_mix(state, epoch), hash(body.randao_reveal))
     state.randao_mixes[epoch % EPOCHS_PER_HISTORICAL_VECTOR] = mix;
 }
-=======
+
 fn process_proposer_slashing(state: &mut BeaconState<MainnetConfig>, proposer_slashing: ProposerSlashing){
     let proposer = state.validators[proposer_slashing.proposer_index];
     // Verify slots match
@@ -179,4 +178,3 @@ fn process_operations(state: &mut BeaconState<MainnetConfig>, body: BeaconBlockB
     //?    for operation in operations{
             //!function(state, operation);}
 }
->>>>>>> ad6c50f7e6004194353e2b9941b75ef9c25bf36c
