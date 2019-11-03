@@ -6,11 +6,12 @@ fn process_final_updates<T>(state: &mut BeaconState<T>) {
             // validator.activation_eligibility_epoch = get_current_epoch(state); // ! missing helper function
         }
 
-        if is_active_validator(validator, get_current_epoch(state))
-            && validator.effective_balance <= T::ejection_balance
-        {
-            initiate_validator_exit(state, ValidatorIndex(i));
-        }
+        // !missing helper functions
+        // if is_active_validator(validator, get_current_epoch(state))
+        //     && validator.effective_balance <= T::ejection_balance
+        // {
+        //     initiate_validator_exit(state, ValidatorIndex(i));
+        // }
     }
 
     //     # Queue validators eligible for activation and not dequeued for activation prior to finalized epoch
