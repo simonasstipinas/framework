@@ -3,7 +3,7 @@ fn process_voluntary_exit(state: &mut BeaconState<T>,exit: VoluntaryExit){
     // Verify the validator is active
     //!assert! (is_active_validator(validator, get_current_epoch(state)))
     // Verify the validator has not yet exited
-    assert! validator.exit_epoch == FAR_FUTURE_EPOCH
+    assert! (validator.exit_epoch == FAR_FUTURE_EPOCH);
     // Exits must specify an epoch when they become valid; they are not valid before then
     //!assert! (get_current_epoch(state) >= exit.epoch)
     // Verify the validator has been active long enough
@@ -135,12 +135,12 @@ fn process_attestation(state: &mut BeaconState<MainnetConfig>, attestation: Atte
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
     assert_eq!(attestation.custody_bits.len(), committee.len());
 
-    //?let pending_attestation = PendingAttestation(
-    //?    data=data,
-    //?    aggregation_bits=attestation.aggregation_bits,
-    //?    inclusion_delay=state.slot - data.slot,
-    //?    proposer_index=get_beacon_proposer_index(state),
-    //?)
+    let pending_attestation = PendingAttestation(
+        attestation.aggregation_bits,
+        data,
+        state.slot - data.slot,
+        get_beacon_proposer_index(state)
+    )
 
 //!    if data.target.epoch == get_current_epoch(state){
         assert_eq! (data.source, state.current_justified_checkpoint);
@@ -167,14 +167,16 @@ fn process_operations(state: &mut BeaconState<MainnetConfig>, body: BeaconBlockB
     # Verify that outstanding deposits are processed up to the maximum number of deposits
     assert_eq(body.deposits.len(), min(MAX_DEPOSITS, state.eth1_data.deposit_count - state.eth1_deposit_index)); 
 
-    //?for operations, function in (
-    //?    (body.proposer_slashings, process_proposer_slashing),
-    //?    (body.attester_slashings, process_attester_slashing),
-    //?    (body.attestations, process_attestation),
-    //?    (body.deposits, process_deposit),
-    //?    (body.voluntary_exits, process_voluntary_exit),
-    //?    # @process_shard_receipt_proofs
-    //?):
-    //?    for operation in operations{
-            //!function(state, operation);}
+    for operations, function in (
+        (body.proposer_slashings, process_proposer_slashing),
+        (body.attester_slashings, process_attester_slashing),
+        (body.attestations, process_attestation),
+        (body.deposits, process_deposit),
+        (body.voluntary_exits, process_voluntary_exit),
+        //?process_shard_receipt_proofs
+    ){
+        for operation in operations{
+            //!function(state, operation);
+    }
+       
 }
