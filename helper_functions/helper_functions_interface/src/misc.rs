@@ -27,10 +27,12 @@ pub fn compute_committee(
     [].to_vec()
 }
 
+// ok
 pub fn compute_epoch_at_slot<C: Config>(_slot: Slot) -> Epoch {
     0
 }
 
+// ok
 pub fn compute_start_slot_of_epoch<C: Config>(_epoch: Epoch) -> Slot {
     0
 }

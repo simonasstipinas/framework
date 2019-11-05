@@ -5,6 +5,7 @@ use types::{
     types::{AttestationData, IndexedAttestation, Validator},
 };
 
+// ok
 pub fn is_active_validator(_validator: &Validator, _epoch: Epoch) -> bool {
     true
 }
