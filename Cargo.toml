@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    'helper_functions/helper_functions_interface',
     'types',
     'utils/bls',
     'utils/eth2_hashing',
@@ -15,6 +16,7 @@ overflow-checks = true
 
 [patch]
 [patch.crates-io]
+helper_functions = { path = "helper_functions/helper_functions_interface" }
 tree_hash = { path = "utils/tree_hash" }
 tree_hash_derive = { path = "utils/tree_hash_derive" }
 eth2_ssz = { path = "utils/ssz" }
