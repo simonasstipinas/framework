@@ -164,7 +164,7 @@ fn process_eth1_data(state: &mut BeaconState<MainnetConfig>, body: BeaconBlockBo
 }
 
 fn process_operations(state: &mut BeaconState<MainnetConfig>, body: BeaconBlockBody){
-    # Verify that outstanding deposits are processed up to the maximum number of deposits
+    //# Verify that outstanding deposits are processed up to the maximum number of deposits
     assert_eq(body.deposits.len(), min(MAX_DEPOSITS, state.eth1_data.deposit_count - state.eth1_deposit_index)); 
 
     for operations, function in (
