@@ -93,14 +93,16 @@ pub fn get_total_active_balance<C: Config>(_state: &BeaconState<C>) -> Result<u6
 //     0
 // }
 
-pub fn get_indexed_attestation<C: Config>(_state: &BeaconState<C>, attestation: &Attestation<C>) -> Result<IndexedAttestation<C>, Error> {
+//ok
+pub fn get_indexed_attestation<C: Config>(_state: &BeaconState<C>, _attestation: &Attestation<C>) -> Result<IndexedAttestation<C>, Error> {
     Err(Error::IndexOutOfRange)
 }
 
-// pub fn get_attesting_indices<C: Config>(
-//     state: &BeaconState<C>,
-//     attestation_data: &AttestationData,
-//     bitlist: &BitList<C::MaxValidatorsPerCommittee>,
-// ) -> Result<impl Iterator<Item=&ValidatorIndex>, Error> {
-//     Ok([].iter())
-// }
+//ok
+ pub fn get_attesting_indices<'a, C: Config>(
+     _state: &'a BeaconState<C>,
+     _attestation_data: &AttestationData,
+     _bitlist: &BitList<C::MaxValidatorsPerCommittee>,
+ ) -> Result<impl Iterator<Item=&'a ValidatorIndex>, Error> {
+     Ok([].iter())
+ }
