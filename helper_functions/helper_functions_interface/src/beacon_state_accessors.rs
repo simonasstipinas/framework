@@ -52,7 +52,7 @@ pub fn get_validator_churn_limit<C: Config>(_state: &BeaconState<C>) -> u64 {
 // ok
 pub fn get_seed<C: Config>(
     _state: &BeaconState<C>,
-    _epoch: &Epoch,
+    _epoch: Epoch,
     _domain_type: DomainType,
 ) -> Result<H256, Error> {
     Ok(H256::from([0; 32]))
@@ -61,7 +61,7 @@ pub fn get_seed<C: Config>(
 // ok
 pub fn get_committee_count_at_slot<C: Config>(
     _state: &BeaconState<C>,
-    _slot: &Slot,
+    _slot: Slot,
 ) -> Result<u64, Error> {
     Ok(1)
 }
@@ -100,7 +100,7 @@ pub fn get_domain<C: Config>(
     _state: &BeaconState<C>,
     _domain_type: DomainType,
     _message_epoch: Option<Epoch>,
-) -> u64 {
+) -> Domain {
     0
 }
 
