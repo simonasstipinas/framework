@@ -39,6 +39,6 @@ pub fn is_valid_merkle_branch<C: Config>(
     _depth: u64,
     _index: u64,
     _root: &H256,
-) -> bool {
-    true
+) -> Result<bool, Error> {
+    Ok(true)
 }
