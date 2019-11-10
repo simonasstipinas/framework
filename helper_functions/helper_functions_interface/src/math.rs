@@ -5,7 +5,7 @@ pub fn integer_squareroot(_n: u64) -> u64 {
     1
 }
 
-// there's a comment in PR about creating some struct for this
+// ok
 pub fn xor(_bytes_1: &[u8], _bytes_2: &[u8]) -> Result<Vec<u8>, Error> {
     Ok([].to_vec())
 }

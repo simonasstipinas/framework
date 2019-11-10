@@ -1,7 +1,7 @@
+use crate::error::Error;
 use types::beacon_state::BeaconState;
 use types::config::Config;
 use types::primitives::{Gwei, ValidatorIndex};
-use crate::error::Error;
 
 // ok
 pub fn increase_balance<C: Config>(
@@ -22,11 +22,17 @@ pub fn decrease_balance<C: Config>(
 }
 
 // ok
-pub fn initiate_validator_exit<C: Config>(_state: &mut BeaconState<C>, _index: ValidatorIndex) -> Result<(), Error> {
+pub fn initiate_validator_exit<C: Config>(
+    _state: &mut BeaconState<C>,
+    _index: ValidatorIndex,
+) -> Result<(), Error> {
     Ok(())
 }
 
 // ok
-pub fn slash_validator<C: Config>(_state: &mut BeaconState<C>, _index: ValidatorIndex) -> Result<(), Error> {
+pub fn slash_validator<C: Config>(
+    _state: &mut BeaconState<C>,
+    _index: ValidatorIndex,
+) -> Result<(), Error> {
     Ok(())
 }
