@@ -1,7 +1,7 @@
+use crate::error::Error;
 use types::beacon_state::BeaconState;
 use types::config::Config;
-use types::primitives::{Epoch, Slot, ValidatorIndex, Version, H256};
-use crate::error::Error;
+use types::primitives::{Domain, DomainType, Epoch, Slot, ValidatorIndex, Version, H256};
 
 //ok
 pub fn compute_shuffled_index<C: Config>(
@@ -27,7 +27,7 @@ pub fn compute_committee<'a>(
     _seed: &H256,
     _index: u64,
     _count: u64,
-) -> Result<impl Iterator<Item=&'a ValidatorIndex>, Error> {
+) -> Result<impl Iterator<Item = &'a ValidatorIndex>, Error> {
     Ok([].iter())
 }
 
@@ -46,6 +46,10 @@ pub fn compute_activation_exit_epoch<C: Config>(_epoch: Epoch) -> Epoch {
     0
 }
 
-//pub fn compute_domain<C: Config>(_domain_type: DomainType, _fork_version: Option<&Version>) -> u64 {
-//    0
-//}
+//ok
+pub fn compute_domain<C: Config>(
+    _domain_type: DomainType,
+    _fork_version: Option<&Version>,
+) -> Domain {
+    0
+}
