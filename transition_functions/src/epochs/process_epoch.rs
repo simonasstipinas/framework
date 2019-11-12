@@ -1,3 +1,5 @@
+use std::cmp;
+
 fn process_final_updates<T>(state: &mut BeaconState<T>) {
     for (i, validator) in state.validators.iter().enumerate() {
         if validator.activation_eligibility_epoch == T::far_future_epoch
@@ -14,6 +16,7 @@ fn process_final_updates<T>(state: &mut BeaconState<T>) {
         // }
     }
 
+    // TODO: Translate
     //     # Queue validators eligible for activation and not dequeued for activation prior to finalized epoch
     //     activation_queue = sorted([
     //         index for index, validator in enumerate(state.validators)
@@ -25,4 +28,18 @@ fn process_final_updates<T>(state: &mut BeaconState<T>) {
     //         validator = state.validators[index]
     //         if validator.activation_epoch == FAR_FUTURE_EPOCH:
     //             validator.activation_epoch = compute_activation_exit_epoch(get_current_epoch(state))
+}
+
+fn process_slashings<T>(state: &mut BeaconState, spec: &ChainSpec) {
+    // ! let epoch = get_current_epoch(state)
+        // ! let total_balance = get_total_active_balance(state)
+        for (i, validator) in state.validators.iter().enumerate() {
+            if validator.slashed && epoch + T::EpochsPerSlashingsVector::to_u64() / 2 == validator.withdrawable_epoch {
+                let increment = spec.effective_balance_increment; // Factored out from penalty numerator to avoid uint64 overflow
+                // TODO: sum fixedvector
+                let penalty_numerator = validator.effective_balance / increment * cmp::min(sum(state.slashings) * 3, total_balance);
+                let penalty = penalty_numerator // total_balance * increment
+                decrease_balance(state, ValidatorIndex(index), penalty)
+            }
+        }
 }
