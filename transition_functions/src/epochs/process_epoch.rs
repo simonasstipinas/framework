@@ -1,6 +1,6 @@
 use std::cmp;
 
-fn process_final_updates<T>(state: &mut BeaconState<T>) {
+fn process_registry_updates<T: Config>(state: &mut BeaconState<T>) {
     for (i, validator) in state.validators.iter().enumerate() {
         if validator.activation_eligibility_epoch == T::far_future_epoch
             && validator.effective_balance == T::max_effective_balance()
