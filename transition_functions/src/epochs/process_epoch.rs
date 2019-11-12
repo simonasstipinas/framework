@@ -1,3 +1,5 @@
+use std::cmp;
+
 fn process_final_updates<T>(state: &mut BeaconState<T>) {
     for (i, validator) in state.validators.iter().enumerate() {
         if validator.activation_eligibility_epoch == T::far_future_epoch
@@ -14,6 +16,7 @@ fn process_final_updates<T>(state: &mut BeaconState<T>) {
         // }
     }
 
+    // TODO: Translate
     //     # Queue validators eligible for activation and not dequeued for activation prior to finalized epoch
     //     activation_queue = sorted([
     //         index for index, validator in enumerate(state.validators)
@@ -78,4 +81,35 @@ fn process_registry_updates<T>(state: &mut BeaconState<T>) {
             }
         }
     }
+}
+
+fn process_final_updates(state: BeaconState<T>) {
+    //!current_epoch = get_current_epoch(state);
+    let next_epoch = Epoch(current_epoch + 1);
+    //# Reset eth1 data votes
+    if (state.slot + 1) % SLOTS_PER_ETH1_VOTING_PERIOD == 0{
+        state.eth1_data_votes = [];
+    }
+    //# Update effective balances with hysteresis
+    for index, validator in enumerate(state.validators){
+        let balance = state.balances[index];
+        HALF_INCREMENT = EFFECTIVE_BALANCE_INCREMENT / 2;
+        if balance < validator.effective_balance or validator.effective_balance + 3 * HALF_INCREMENT < balance{
+            validator.effective_balance = min(balance - balance % EFFECTIVE_BALANCE_INCREMENT, MAX_EFFECTIVE_BALANCE);
+        }
+    }
+
+    //# Reset slashings
+    state.slashings[next_epoch % EPOCHS_PER_SLASHINGS_VECTOR] = Gwei(0);
+    //# Set randao mix
+    state.randao_mixes[next_epoch % EPOCHS_PER_HISTORICAL_VECTOR] = get_randao_mix(state, current_epoch);
+    //# Set historical root accumulator
+    if next_epoch % (SLOTS_PER_HISTORICAL_ROOT / SLOTS_PER_EPOCH) == 0{
+        historical_batch = HistoricalBatch(block_roots=state.block_roots, state_roots=state.state_roots);
+        state.historical_roots.append(hash_tree_root(historical_batch));
+    }
+
+    //# Rotate current/previous epoch attestations
+    state.previous_epoch_attestations = state.current_epoch_attestations;
+    state.current_epoch_attestations = [];
 }
