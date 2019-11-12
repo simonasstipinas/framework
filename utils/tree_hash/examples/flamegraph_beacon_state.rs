@@ -1,10 +1,11 @@
 use types::test_utils::TestingBeaconStateBuilder;
-use types::{BeaconState, EthSpec, MainnetEthSpec};
+use types::{BeaconState, config};
+use types;
 
 const TREE_HASH_LOOPS: usize = 1_000;
 const VALIDATOR_COUNT: usize = 1_000;
 
-fn build_state<T: EthSpec>(validator_count: usize) -> BeaconState<T> {
+fn build_state<T: Config>(validator_count: usize) -> BeaconState<T> {
     let (state, _keypairs) = TestingBeaconStateBuilder::from_default_keypairs_file_if_exists(
         validator_count,
         &T::default_spec(),
@@ -22,7 +23,7 @@ fn build_state<T: EthSpec>(validator_count: usize) -> BeaconState<T> {
 }
 
 fn main() {
-    let state = build_state::<MainnetEthSpec>(VALIDATOR_COUNT);
+    let state = build_state::<Config>(VALIDATOR_COUNT);
 
     // This vec is an attempt to ensure the compiler doesn't optimize-out the hashing.
     let mut vec = Vec::with_capacity(TREE_HASH_LOOPS);

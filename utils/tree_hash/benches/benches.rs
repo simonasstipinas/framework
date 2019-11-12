@@ -4,7 +4,7 @@ extern crate lazy_static;
 use criterion::Criterion;
 use criterion::{black_box, criterion_group, criterion_main, Benchmark};
 use types::test_utils::{generate_deterministic_keypairs, TestingBeaconStateBuilder};
-use types::{BeaconState, EthSpec, Keypair, MainnetEthSpec, MinimalEthSpec};
+use types::{BeaconState, EthSpec, Keypair, MinimalEthSpec};
 
 lazy_static! {
     static ref KEYPAIRS: Vec<Keypair> = { generate_deterministic_keypairs(300_000) };
@@ -52,8 +52,8 @@ fn all_benches(c: &mut Criterion) {
     bench_suite::<MinimalEthSpec>(c, "minimal", 100_000);
     bench_suite::<MinimalEthSpec>(c, "minimal", 300_000);
 
-    bench_suite::<MainnetEthSpec>(c, "mainnet", 100_000);
-    bench_suite::<MainnetEthSpec>(c, "mainnet", 300_000);
+    bench_suite::<Config>(c, "mainnet", 100_000);
+    bench_suite::<Config>(c, "mainnet", 300_000);
 }
 
 criterion_group!(benches, all_benches,);

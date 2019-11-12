@@ -1,3 +1,6 @@
+use helper_functions;
+#[derive(Debug, PartialEq)]
+
 fn process_voluntary_exit(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index];
     // Verify the validator is active
@@ -62,7 +65,7 @@ fn process_block_header(state: BeaconState<T>, block: BeaconBlock) {
     //# Verify that the slots match
     assert! (block.slot == state.slot)
     //# Verify that the parent matches
-    //!assert! (block.parent_root == signing_root(state.latest_block_header));
+    assert! (block.parent_root == signing_root(state.latest_block_header));
     //# Save current block as the new latest block
     //? check if its ok in rust
     state.latest_block_header = BeaconBlockHeader(
@@ -73,19 +76,19 @@ fn process_block_header(state: BeaconState<T>, block: BeaconBlock) {
         //# `signature` is zeroed
     )
     //# Verify proposer is not slashed
-    //!proposer = state.validators[get_beacon_proposer_index(state)];
+    let proposer = state.validators[get_beacon_proposer_index(state)];
     assert! (not proposer.slashed);
     //# Verify proposer signature
-    //!assert! (bls_verify(proposer.pubkey, signing_root(block), block.signature, get_domain(state, DOMAIN_BEACON_PROPOSER)));
+    assert! (bls_verify(proposer.pubkey, signing_root(block), block.signature, get_domain(state, DOMAIN_BEACON_PROPOSER)));
 }
 
 fn process_randao(state: BeaconState, body: BeaconBlockBody) {
-    //!epoch = get_current_epoch(state)
+    let epoch = get_current_epoch(state);
     //# Verify RANDAO reveal
-    //!proposer = state.validators[get_beacon_proposer_index(state)]
-    //!assert bls_verify(proposer.pubkey, hash_tree_root(epoch), body.randao_reveal, get_domain(state, DOMAIN_RANDAO))
+    let proposer = state.validators[get_beacon_proposer_index(state)];
+    assert! (bls_verify(proposer.pubkey, hash_tree_root(epoch), body.randao_reveal, get_domain(state, DOMAIN_RANDAO)));
     //# Mix in RANDAO reveal
-    //!mix = xor(get_randao_mix(state, epoch), hash(body.randao_reveal))
+    let mix = xor(get_randao_mix(state, epoch), hash(body.randao_reveal));
     state.randao_mixes[epoch % EPOCHS_PER_HISTORICAL_VECTOR] = mix;
 }
 
@@ -96,42 +99,42 @@ fn process_proposer_slashing(state: &mut BeaconState<MainnetConfig>, proposer_sl
     // But the headers are different
     assert_ne!(proposer_slashing.header_1, proposer_slashing.header_2);
     // Check proposer is slashable
-    //!assert(is_slashable_validator(proposer, get_current_epoch(state))); 
+    assert(is_slashable_validator(proposer, get_current_epoch(state))); 
     // Signatures are valid
-    //?for header in (proposer_slashing.header_1, proposer_slashing.header_2_{
-    //!    let domain = get_domain(state, DOMAIN_BEACON_PROPOSER, compute_epoch_at_slot(header.slot));
-    //!    assert!(bls_verify(proposer.pubkey, signing_root(header), header.signature, domain)) ;
+    for header in (proposer_slashing.header_1, proposer_slashing.header_2_{
+        let domain = get_domain(state, DOMAIN_BEACON_PROPOSER, compute_epoch_at_slot(header.slot));
+        assert!(bls_verify(proposer.pubkey, signing_root(header), header.signature, domain)) ;
     }
 
-    //!slash_validator(state, proposer_slashing.proposer_index);
+    slash_validator(state, proposer_slashing.proposer_index);
 }
 
 fn process_attester_slashing(state: &mut BeaconState<MainnetConfig>, attester_slashing: AttesterSlashing){
     let attestation_1 = attester_slashing.attestation_1;
     assert!(is_slashable_attestation_data(attestation_1.data, attestation_2.data));
     let attestation_2 = attester_slashing.attestation_2;
-    //!assert!(is_valid_indexed_attestation(state, attestation_1));
-    //!assert!(is_valid_indexed_attestation(state, attestation_2)); 
+    assert!(is_valid_indexed_attestation(state, attestation_1));
+    assert!(is_valid_indexed_attestation(state, attestation_2)); 
 
     let mut slashed_any = false;
     let attesting_indices_1 = attestation_1.custody_bit_0_indices + attestation_1.custody_bit_1_indices;
     let attesting_indices_2 = attestation_2.custody_bit_0_indices + attestation_2.custody_bit_1_indices;
-    //?for index in sorted(set(attesting_indices_1).intersection(attesting_indices_2)){
-    //!    if is_slashable_validator(state.validators[index], get_current_epoch(state)){
-    //!        slash_validator(state, index)
-    //!        slashed_any = true;
-    //!     }
-    //! }
+    for index in sorted(set(attesting_indices_1).intersection(attesting_indices_2)){
+         if is_slashable_validator(state.validators[index], get_current_epoch(state)){
+            slash_validator(state, index);
+            slashed_any = true;
+         }
+     }
     assert!(slashed_any);
 }
 
 fn process_attestation(state: &mut BeaconState<MainnetConfig>, attestation: Attestation){
     let data = attestation.data;
-    //!assert!(data.index < get_committee_count_at_slot(state, data.slot)); 
-    //!assert!(data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)))
+    assert!(data.index < get_committee_count_at_slot(state, data.slot)); 
+    assert!(data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)))
     assert!(data.slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= data.slot + SLOTS_PER_EPOCH);
 
-    //!let committee = get_beacon_committee(state, data.slot, data.index);
+    let committee = get_beacon_committee(state, data.slot, data.index);
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
     assert_eq!(attestation.custody_bits.len(), committee.len());
 
@@ -151,8 +154,8 @@ fn process_attestation(state: &mut BeaconState<MainnetConfig>, attestation: Atte
         state.previous_epoch_attestations.append(pending_attestation);
     }
 
-    # Check signature
-    //!assert! (is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))_
+    //# Check signature
+    assert! (is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))_
 }
 
 
@@ -178,6 +181,21 @@ fn process_operations(state: &mut BeaconState<MainnetConfig>, body: BeaconBlockB
         for operation in operations{
             function(state, operation);
         }
+    }
+
+}
+
+#[cfg(test)]
+mod block_processing_tests {
+    use types::{beacon_state::*, config::MainnetConfig};
+    // use crate::{config::*};
+    use super::*;
+
+    #[test]
+    fn process_good_block() {
+
+
+        assert_eq!(2, 1);
     }
 
 }
