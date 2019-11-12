@@ -1,4 +1,6 @@
 use crate::*;
+use helper_functions;
+
 use types::{
     beacon_state::*,
     config::{Config, MainnetConfig},
