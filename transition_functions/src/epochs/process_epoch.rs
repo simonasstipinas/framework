@@ -1,4 +1,8 @@
 use std::cmp;
+use types::{
+    beacon_state::*,
+    config::{Config, MainnetConfig},
+};
 
 fn process_registry_updates<T: Config>(state: &mut BeaconState<T>) {
     for (i, validator) in state.validators.iter().enumerate() {
