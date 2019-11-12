@@ -1,4 +1,5 @@
 use helper_functions;
+use types::{ beacon_state::*, config::{ Config, MainnetConfig }};
 #[derive(Debug, PartialEq)]
 
 fn process_voluntary_exit(state: &mut BeaconState<T>,exit: VoluntaryExit){
