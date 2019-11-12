@@ -1,5 +1,5 @@
 use types::test_utils::TestingBeaconStateBuilder;
-use types::{BeaconState, config};
+use types::{BeaconState, config::{Config, MainnetConfig},};
 use types;
 
 const TREE_HASH_LOOPS: usize = 1_000;
