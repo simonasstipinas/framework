@@ -1,14 +1,15 @@
 use crate::*;
-use types::{beacon_state::*, config::MainnetConfig, types::BeaconBlockHeader};
+use types::{
+    beacon_state::*,
+    config::{Config, MainnetConfig},
+    types::BeaconBlockHeader,
+};
 // use types::*;
 use ethereum_types::H256 as Hash256;
 #[derive(Debug, PartialEq)]
 pub enum Error {}
 
-pub fn process_slot(
-    state: &mut BeaconState<MainnetConfig>,
-    genesis_slot: u64,
-) -> Result<(), Error> {
+pub fn process_slot<T: Config>(state: &mut BeaconState<T>, genesis_slot: u64) -> Result<(), Error> {
     cache_state(state)?;
 
     if state.slot > genesis_slot
@@ -23,7 +24,7 @@ pub fn process_slot(
     Ok(())
 }
 
-fn cache_state(state: &mut BeaconState<MainnetConfig>) -> Result<(), Error> {
+fn cache_state<T: Config>(state: &mut BeaconState<T>) -> Result<(), Error> {
     let previous_state_root = state.update_tree_hash_cache().unwrap(); //?;
     let previous_slot = state.slot;
 
