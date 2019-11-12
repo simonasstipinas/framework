@@ -1,8 +1,14 @@
-use helper_functions;
+use helper_functions::beacon_state_accessors::*;
+use helper_functions::beacon_state_mutators::*;
+use helper_functions::crypto::*;
+use helper_functions::math::*;
+use helper_functions::misc::*;
+use helper_functions::predicates::*;
+use types::consts::*;
+use types::types::*;
 use types::{ beacon_state::*, config::{ Config, MainnetConfig }};
-#[derive(Debug, PartialEq)]
 
-fn process_voluntary_exit(state: &mut BeaconState<T>,exit: VoluntaryExit){
+fn process_voluntary_exit<T: Config>(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index];
     // Verify the validator is active
     //!assert! (is_active_validator(validator, get_current_epoch(state)))
@@ -19,7 +25,7 @@ fn process_voluntary_exit(state: &mut BeaconState<T>,exit: VoluntaryExit){
     //!initiate_validator_exit(state, exit.validator_index)
 }
 
-fn process_deposit(state: &mut BeaconState<T>, deposit: Deposit) { 
+fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) { 
     //# Verify the Merkle branch  is_valid_merkle_branch
     //! what it do
     assert!(
@@ -62,7 +68,7 @@ fn process_deposit(state: &mut BeaconState<T>, deposit: Deposit) {
     }
 }
 
-fn process_block_header(state: BeaconState<T>, block: BeaconBlock) {
+fn process_block_header<T: Config>(state: BeaconState<T>, block: BeaconBlock<T>) {
     //# Verify that the slots match
     assert! (block.slot == state.slot)
     //# Verify that the parent matches
@@ -83,7 +89,7 @@ fn process_block_header(state: BeaconState<T>, block: BeaconBlock) {
     assert! (bls_verify(proposer.pubkey, signing_root(block), block.signature, get_domain(state, DOMAIN_BEACON_PROPOSER)));
 }
 
-fn process_randao(state: BeaconState, body: BeaconBlockBody) {
+fn process_randao<T: Config>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
     let epoch = get_current_epoch(state);
     //# Verify RANDAO reveal
     let proposer = state.validators[get_beacon_proposer_index(state)];
@@ -93,7 +99,7 @@ fn process_randao(state: BeaconState, body: BeaconBlockBody) {
     state.randao_mixes[epoch % EPOCHS_PER_HISTORICAL_VECTOR] = mix;
 }
 
-fn process_proposer_slashing(state: &mut BeaconState<MainnetConfig>, proposer_slashing: ProposerSlashing){
+fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_slashing: ProposerSlashing){
     let proposer = state.validators[proposer_slashing.proposer_index];
     // Verify slots match
     assert_eq!(proposer_slashing.header_1.slot, proposer_slashing.header_2.slot);
@@ -110,7 +116,7 @@ fn process_proposer_slashing(state: &mut BeaconState<MainnetConfig>, proposer_sl
     slash_validator(state, proposer_slashing.proposer_index);
 }
 
-fn process_attester_slashing(state: &mut BeaconState<MainnetConfig>, attester_slashing: AttesterSlashing){
+fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_slashing: AttesterSlashing<T>){
     let attestation_1 = attester_slashing.attestation_1;
     assert!(is_slashable_attestation_data(attestation_1.data, attestation_2.data));
     let attestation_2 = attester_slashing.attestation_2;
@@ -129,7 +135,7 @@ fn process_attester_slashing(state: &mut BeaconState<MainnetConfig>, attester_sl
     assert!(slashed_any);
 }
 
-fn process_attestation(state: &mut BeaconState<MainnetConfig>, attestation: Attestation){
+fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attestation<T>){
     let data = attestation.data;
     assert!(data.index < get_committee_count_at_slot(state, data.slot)); 
     assert!(data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)))
@@ -160,16 +166,16 @@ fn process_attestation(state: &mut BeaconState<MainnetConfig>, attestation: Atte
 }
 
 
-fn process_eth1_data(state: &mut BeaconState<MainnetConfig>, body: BeaconBlockBody){
+fn process_eth1_data<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBody<T>){
     state.eth1_data_votes.push(body.eth1_data);
     if (state.eth1_data_votes.count(body.eth1_data) * 2 > SLOTS_PER_ETH1_VOTING_PERIOD){
         state.eth1_data = body.eth1_data;
     }
 }
 
-fn process_operations(state: &mut BeaconState<MainnetConfig>, body: BeaconBlockBody){
+fn process_operations(state: &mut BeaconState<T>, body: BeaconBlockBody<T>){
     //# Verify that outstanding deposits are processed up to the maximum number of deposits
-    assert_eq(body.deposits.len(), min(MAX_DEPOSITS, state.eth1_data.deposit_count - state.eth1_deposit_index)); 
+    assert_eq!(body.deposits.len(), min(MAX_DEPOSITS, state.eth1_data.deposit_count - state.eth1_deposit_index)); 
 
     for operations, function in (
         (body.proposer_slashings, process_proposer_slashing),
