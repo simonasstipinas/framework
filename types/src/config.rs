@@ -6,7 +6,7 @@ use core::hash::Hash;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 
-use crate::primitives::ValidatorIndex;
+use crate::primitives::{ValidatorIndex, Epoch};
 
 pub trait Config
 where
@@ -208,6 +208,9 @@ where
     }
     fn ejection_balance() -> u64 {
         16_000_000_000
+    }
+    fn far_future_epoch() -> u64 {
+        18_446_744_073_709_551_616
     }
     fn genesis_epoch() -> u64 {
         0
