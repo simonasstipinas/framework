@@ -1,6 +1,5 @@
 use bls::{
-    AggregatePublicKey, AggregateSignature, PublicKey, PublicKeyBytes, SecretKey, Signature,
-    SignatureBytes,
+    AggregatePublicKey, AggregateSignature, PublicKey, PublicKeyBytes, Signature, SignatureBytes,
 };
 
 use ring::digest::{digest, SHA256};
@@ -51,6 +50,7 @@ pub fn bls_aggregate_pubkeys(pubkeys: &[PublicKey]) -> AggregatePublicKey {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bls::SecretKey;
     use rustc_hex::FromHex;
 
     #[test]
@@ -59,7 +59,9 @@ mod tests {
 
         let output = hash(&input);
         let expected_hex = "073F7397B078DCA7EFC7F9DC05B528AF1AFBF415D3CAA8A5041D1A4E5369E0B3";
-        let expected: Vec<u8> = expected_hex.from_hex().unwrap();
+        let expected: Vec<u8> = expected_hex
+            .from_hex()
+            .expect("Invalid hex string constant");
         assert_eq!(expected, output);
     }
 
@@ -72,7 +74,7 @@ mod tests {
         ];
 
         // Load some keys from a serialized secret key.
-        let sk = SecretKey::from_bytes(&sk_bytes).unwrap();
+        let sk = SecretKey::from_bytes(&sk_bytes).expect("Expected success");
         let pk = PublicKey::from_secret_key(&sk);
         let domain: u64 = 0;
 
@@ -81,8 +83,10 @@ mod tests {
         let signature = Signature::new(message, domain, &sk);
         assert!(signature.verify(message, domain, &pk));
 
-        let pk_bytes = PublicKeyBytes::from_bytes(pk.as_bytes().as_slice()).unwrap();
-        let sg_bytes = SignatureBytes::from_bytes(signature.as_bytes().as_slice()).unwrap();
+        let pk_bytes =
+            PublicKeyBytes::from_bytes(pk.as_bytes().as_slice()).expect("Expected success");
+        let sg_bytes =
+            SignatureBytes::from_bytes(signature.as_bytes().as_slice()).expect("Expected sucess");
 
         assert_eq!(bls_verify(&pk_bytes, message, &sg_bytes, domain), Ok(true));
     }
@@ -96,7 +100,7 @@ mod tests {
         ];
 
         // Load some keys from a serialized secret key.
-        let sk = SecretKey::from_bytes(&sk_bytes).unwrap();
+        let sk = SecretKey::from_bytes(&sk_bytes).expect("Expected success");
         let pk = PublicKey::from_secret_key(&sk);
         let domain: u64 = 0;
 
@@ -106,8 +110,10 @@ mod tests {
         // Different domain
         assert!(!signature.verify(message, 1, &pk));
 
-        let pk_bytes = PublicKeyBytes::from_bytes(pk.as_bytes().as_slice()).unwrap();
-        let sg_bytes = SignatureBytes::from_bytes(signature.as_bytes().as_slice()).unwrap();
+        let pk_bytes =
+            PublicKeyBytes::from_bytes(pk.as_bytes().as_slice()).expect("Expected success");
+        let sg_bytes =
+            SignatureBytes::from_bytes(signature.as_bytes().as_slice()).expect("Expected sucess");
 
         // Different domain
         assert_eq!(bls_verify(&pk_bytes, message, &sg_bytes, 1), Ok(false));
@@ -122,19 +128,18 @@ mod tests {
             237, 59, 140, 111,
         ];
         // Load some keys from a serialized secret key.
-        let sk = SecretKey::from_bytes(&sk_bytes).unwrap();
+        let sk = SecretKey::from_bytes(&sk_bytes).expect("Expected success");
         let domain: u64 = 0;
         // Sign a message
         let message = b"cats";
         let signature = Signature::new(message, domain, &sk);
 
-        let pk_bytes = PublicKeyBytes::from_bytes(&[0; 48]).unwrap();
-        let sg_bytes = SignatureBytes::from_bytes(signature.as_bytes().as_slice()).unwrap();
+        let pk_bytes = PublicKeyBytes::from_bytes(&[0; 48]).expect("Expected success");
+        let sg_bytes =
+            SignatureBytes::from_bytes(signature.as_bytes().as_slice()).expect("Expected success");
 
         // Different domain
-        let err = DecodeError::BytesInvalid(
-            format!("Invalid PublicKey bytes: {:?}", pk_bytes).to_string(),
-        );
+        let err = DecodeError::BytesInvalid(format!("Invalid PublicKey bytes: {:?}", pk_bytes));
         assert_eq!(bls_verify(&pk_bytes, message, &sg_bytes, 1), Err(err));
     }
 
@@ -147,16 +152,15 @@ mod tests {
             237, 59, 140, 111,
         ];
         // Load some keys from a serialized secret key.
-        let sk = SecretKey::from_bytes(&sk_bytes).unwrap();
+        let sk = SecretKey::from_bytes(&sk_bytes).expect("Expected success");
         let pk = PublicKey::from_secret_key(&sk);
 
-        let pk_bytes = PublicKeyBytes::from_bytes(pk.as_bytes().as_slice()).unwrap();
-        let sg_bytes = SignatureBytes::from_bytes(&[1; 96]).unwrap();
+        let pk_bytes =
+            PublicKeyBytes::from_bytes(pk.as_bytes().as_slice()).expect("Expected success");
+        let sg_bytes = SignatureBytes::from_bytes(&[1; 96]).expect("Expected success");
 
         // Different domain
-        let err = DecodeError::BytesInvalid(
-            format!("Invalid Signature bytes: {:?}", sg_bytes).to_string(),
-        );
+        let err = DecodeError::BytesInvalid(format!("Invalid Signature bytes: {:?}", sg_bytes));
         assert_eq!(bls_verify(&pk_bytes, b"aaabbb", &sg_bytes, 1), Err(err));
     }
 }

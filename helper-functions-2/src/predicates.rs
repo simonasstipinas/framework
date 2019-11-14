@@ -23,7 +23,8 @@ pub fn is_slashable_attestation_data(data_1: &AttestationData, data_2: &Attestat
 mod tests {
     use super::*;
     use bls::{PublicKey, SecretKey};
-    use std::u64::MAX as epoch_max;
+    //use std::u64::max_value() as epoch_max;
+    const EPOCH_MAX: u64 = u64::max_value();
     use types::primitives::H256;
     use types::types::{Checkpoint, Crosslink};
 
@@ -31,16 +32,16 @@ mod tests {
         Validator {
             effective_balance: 0,
             slashed: false,
-            activation_eligibility_epoch: epoch_max,
-            activation_epoch: epoch_max,
-            exit_epoch: epoch_max,
-            withdrawable_epoch: epoch_max,
+            activation_eligibility_epoch: EPOCH_MAX,
+            activation_epoch: EPOCH_MAX,
+            exit_epoch: EPOCH_MAX,
+            withdrawable_epoch: EPOCH_MAX,
             withdrawal_credentials: H256([0; 32]),
             pubkey: PublicKey::from_secret_key(&SecretKey::random()),
         }
     }
 
-    fn default_crosslink() -> Crosslink {
+    const fn default_crosslink() -> Crosslink {
         Crosslink {
             shard: 0,
             parent_root: H256([0; 32]),
@@ -50,7 +51,7 @@ mod tests {
         }
     }
 
-    fn default_attestation_data() -> AttestationData {
+    const fn default_attestation_data() -> AttestationData {
         AttestationData {
             beacon_block_root: H256([0; 32]),
             source: Checkpoint {
