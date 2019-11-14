@@ -377,7 +377,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "helper-functions-2"
+name = "helper_functions"
 version = "0.1.0"
 dependencies = [
  "bls 0.1.0",
