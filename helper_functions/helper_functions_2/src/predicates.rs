@@ -127,7 +127,7 @@ pub fn validate_index_attestation<C: Config>(
     }
 
     if !is_sorted(bit_0_indices) || !is_sorted(bit_1_indices) {
-        return Err(Error::CustodyBitIndicesNotSorted)
+        return Err(Error::CustodyBitIndicesNotSorted);
     }
 
     let aggr_pubkey1 = aggregate_validator_public_keys(bit_0_indices, state)?;
@@ -141,15 +141,15 @@ pub fn validate_index_attestation<C: Config>(
         data: indexed_attestation.data.clone(),
         custody_bit: true
     }.tree_hash_root();
-    //TODO:
-    indexed_attestation.signature.verify_multiple(
+    match indexed_attestation.signature.verify_multiple(
         &[&hash_1, &hash_2],
-        accessors::get_domain(state, ),
+        //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
+        accessors::get_domain(state, 0, Some(indexed_attestation.data.target.epoch)),
         &[&aggr_pubkey1, &aggr_pubkey2]
-    );
-    
-
-    Ok(())
+    ) {
+        true => Ok(()),
+        false => Err(Error::InvalidSignature),
+    }
 }
 
 #[cfg(test)]

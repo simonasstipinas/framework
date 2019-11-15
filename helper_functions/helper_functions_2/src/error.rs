@@ -6,4 +6,5 @@ pub enum Error {
     CustodyBitIndicesNotSorted,
     CustodyBitIndicesIntersect,
     IndicesExceedMaxValidators,
+    InvalidSignature,
 }
