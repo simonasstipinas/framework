@@ -68,44 +68,6 @@ fn aggregate_validator_public_keys<C: Config>(
     Ok(aggr_pkey)
 }
 
-// ok
-// In case of invalid attestatation return an error specifying why it's invalid
-//  instead of just false. That's how lighthouse does it.
-// TODO: add required error types to Error enum
-// """
-//     Check if ``indexed_attestation`` has valid indices and signature.
-//     """
-//     bit_0_indices = indexed_attestation.custody_bit_0_indices
-//     bit_1_indices = indexed_attestation.custody_bit_1_indices
-
-//     # Verify no index has custody bit equal to 1 [to be removed in phase 1]
-//     if not len(bit_1_indices) == 0:  # [to be removed in phase 1]
-//         return False                 # [to be removed in phase 1]
-//     # Verify max number of indices
-//     if not len(bit_0_indices) + len(bit_1_indices) <= MAX_VALIDATORS_PER_COMMITTEE:
-//         return False
-//     # Verify index sets are disjoint
-//     if not len(set(bit_0_indices).intersection(bit_1_indices)) == 0:
-//         return False
-//     # Verify indices are sorted
-//     if not (bit_0_indices == sorted(bit_0_indices) and bit_1_indices == sorted(bit_1_indices)):
-//         return False
-//     # Verify aggregate signature
-//     if not bls_verify_multiple(
-//         pubkeys=[
-//             bls_aggregate_pubkeys([state.validators[i].pubkey for i in bit_0_indices]),
-//             bls_aggregate_pubkeys([state.validators[i].pubkey for i in bit_1_indices]),
-//         ],
-//         message_hashes=[
-//             hash_tree_root(AttestationDataAndCustodyBit(data=indexed_attestation.data, custody_bit=0b0)),
-//             hash_tree_root(AttestationDataAndCustodyBit(data=indexed_attestation.data, custody_bit=0b1)),
-//         ],
-//         signature=indexed_attestation.signature,
-//         domain=get_domain(state, DOMAIN_BEACON_ATTESTER, indexed_attestation.data.target.epoch),
-//     ):
-//         return False
-//     return True
-
 pub fn validate_index_attestation<C: Config>(
     state: &BeaconState<C>,
     indexed_attestation: &IndexedAttestation<C>,
