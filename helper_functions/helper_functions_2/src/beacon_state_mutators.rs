@@ -1,25 +1,86 @@
+use super::beacon_state_accessors as accessors;
+use super::error::Error;
+use std::cmp;
+use std::convert::TryFrom;
+use typenum::Unsigned;
 use types::beacon_state::BeaconState;
-use types::config::MinimalConfig;
-use types::primitives::Gwei;
-use types::primitives::ValidatorIndex;
+use types::config::Config;
+use types::primitives::{Epoch, Gwei, ValidatorIndex};
 
-pub fn increase_balance(mut state: BeaconState<MinimalConfig>, index: ValidatorIndex, delta: Gwei) {
-    state.balances[index as usize] += delta;
+pub fn increase_balance<C: Config>(
+    state: &mut BeaconState<C>,
+    index: ValidatorIndex,
+    delta: Gwei,
+) -> Result<(), Error> {
+    // TODO: check if index is not out of bounds
+    let v_index = usize::try_from(index)
+        .expect("Conversion to usize for indexing would truncate the value of ValidatorIndex");
+    state.balances[v_index] += delta;
+    Ok(())
 }
 
-pub fn decrease_balance(mut state: BeaconState<MinimalConfig>, index: ValidatorIndex, delta: Gwei) {
-    if delta > state.balances[index as usize] {
-        state.balances[index as usize] = 0;
+pub fn decrease_balance<C: Config>(
+    state: &mut BeaconState<C>,
+    index: ValidatorIndex,
+    delta: Gwei,
+) -> Result<(), Error> {
+    // TODO: check if index not out of bounds
+    let v_index = usize::try_from(index)
+        .expect("Conversion to usize for indexing would truncate the value of ValidatorIndex");
+    if delta > state.balances[v_index] {
+        state.balances[v_index] = 0;
     } else {
-        state.balances[index as usize] -= delta;
+        state.balances[v_index] -= delta;
     }
+    Ok(())
+}
+
+pub fn initiate_validator_exit<C: Config>(
+    _state: &mut BeaconState<C>,
+    _index: ValidatorIndex,
+) -> Result<(), Error> {
+    // TODO:
+    Ok(())
+}
+
+pub fn slash_validator<C: Config>(
+    state: &mut BeaconState<C>,
+    slashed_index: ValidatorIndex,
+    whistleblower_index: Option<ValidatorIndex>,
+) -> Result<(), Error> {
+    let epoch: Epoch = accessors::get_current_epoch(state);
+    initiate_validator_exit(state, slashed_index)?;
+    let sl_index = usize::try_from(slashed_index)
+        .expect("Conversion to usize for indexing would truncate the value of ValidatorIndex");
+    let validator = &mut state.validators[sl_index];
+    validator.slashed = true;
+    let epochs_per_slashings = C::EpochsPerSlashingsVector::to_u64();
+    validator.withdrawable_epoch =
+        cmp::max(validator.withdrawable_epoch, epoch + epochs_per_slashings);
+    let effective_balance = validator.effective_balance;
+    let slashings_index = usize::try_from(epoch % epochs_per_slashings)
+        .expect("Conversion to usize for indexing would truncate the value of ValidatorIndex");
+    state.slashings[slashings_index] += effective_balance;
+    let decr = validator.effective_balance / C::min_slashing_penalty_quotient();
+    decrease_balance(state, slashed_index, decr)?;
+
+    // Apply proposer and whistleblower rewards
+    let proposer_index = accessors::get_beacon_proposer_index(state)?;
+    let whistleblower_ind_val = match whistleblower_index {
+        None => proposer_index,
+        Some(i) => i,
+    };
+    let whistleblower_reward = effective_balance / C::whistleblower_reward_quotient();
+    let proposer_reward = effective_balance / C::proposer_reward_quotient();
+    increase_balance(state, proposer_index, proposer_reward)?;
+    increase_balance(state, whistleblower_ind_val, whistleblower_reward)?;
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    /*
-    use super::*;
+    //use super::*;
 
-    fn mock_beaconstate() -> BeaconState {}
-    */
+    //fn mock_beaconstate() -> BeaconState {}
 }

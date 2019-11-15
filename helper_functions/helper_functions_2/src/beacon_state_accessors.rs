@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::predicates::is_active_validator;
 use ethereum_types::H256;
 use std::cmp::max;
@@ -33,9 +34,10 @@ pub fn get_active_validator_indices<C: Config>(
     validators
 }
 
-// pub fn get_current_epoch<C: Config>(state: BeaconState<C>) -> Epoch {
-//     crate::misc::compute_epoch_at_slot(state.slot)
-// }
+pub fn get_current_epoch<C: Config>(state: &BeaconState<C>) -> Epoch {
+    crate::misc::compute_epoch_at_slot(state.slot)
+}
+
 pub fn get_validator_churn_limit<C: Config>(state: BeaconState<C>) -> u64 {
     let active_validator_indices = get_active_validator_indices(&state, 8); // get_current_epoch
     let active_validator_count = active_validator_indices.len() as u64;
@@ -59,4 +61,11 @@ pub fn get_total_balance<C: Config>(state: BeaconState<C>, indices: Vec<Validato
 pub fn get_total_active_balance<C: Config>(state: BeaconState<C>) -> Gwei {
     let validators = get_active_validator_indices(&state, 8); // get_current_epoch
     get_total_balance(state, validators)
+}
+
+// TODO:
+pub fn get_beacon_proposer_index<C: Config>(
+    _state: &BeaconState<C>,
+) -> Result<ValidatorIndex, Error> {
+    Ok(0)
 }
