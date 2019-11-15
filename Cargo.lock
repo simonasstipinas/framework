@@ -383,6 +383,7 @@ dependencies = [
  "bls 0.1.0",
  "eth2_ssz 0.1.2",
  "ethereum-types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "itertools 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ring 0.14.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hex 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "typenum 1.11.2 (registry+https://github.com/rust-lang/crates.io-index)",

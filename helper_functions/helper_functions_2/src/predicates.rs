@@ -1,5 +1,12 @@
-use types::primitives::Epoch;
-use types::types::{AttestationData, Validator};
+use crate::error::Error;
+use types::{
+    beacon_state::BeaconState,
+    config::Config,
+    primitives::{Epoch, H256},
+    types::{AttestationData, IndexedAttestation, Validator},
+};
+use typenum::Unsigned;
+use itertools::Itertools;
 
 // Check if validator is active
 pub fn is_active_validator(validator: &Validator, epoch: Epoch) -> bool {
@@ -17,6 +24,91 @@ pub fn is_slashable_validator(validator: &Validator, epoch: Epoch) -> bool {
 pub fn is_slashable_attestation_data(data_1: &AttestationData, data_2: &AttestationData) -> bool {
     (data_1 != data_2 && data_1.target.epoch == data_2.target.epoch)
         || (data_1.source.epoch < data_2.source.epoch && data_2.target.epoch < data_1.target.epoch)
+}
+
+fn is_sorted<I>(data: I) -> bool
+where
+    I: IntoIterator,
+    I::Item: Ord + Clone,
+{
+    data.into_iter().tuple_windows().all(|(a, b)| a <= b)
+}
+
+fn has_common_elements<I>(data1: I, data2: I) -> bool
+where
+    I: IntoIterator,
+    I::Item: Eq
+{
+    let mut data2_iter = data2.into_iter();
+    data1.into_iter().any(|x| {
+        data2_iter.any(|y| x == y)
+
+    })
+}
+
+// ok
+// In case of invalid attestatation return an error specifying why it's invalid
+//  instead of just false. That's how lighthouse does it.
+// TODO: add required error types to Error enum
+// """
+//     Check if ``indexed_attestation`` has valid indices and signature.
+//     """
+//     bit_0_indices = indexed_attestation.custody_bit_0_indices
+//     bit_1_indices = indexed_attestation.custody_bit_1_indices
+
+//     # Verify no index has custody bit equal to 1 [to be removed in phase 1]
+//     if not len(bit_1_indices) == 0:  # [to be removed in phase 1]
+//         return False                 # [to be removed in phase 1]
+//     # Verify max number of indices
+//     if not len(bit_0_indices) + len(bit_1_indices) <= MAX_VALIDATORS_PER_COMMITTEE:
+//         return False
+//     # Verify index sets are disjoint
+//     if not len(set(bit_0_indices).intersection(bit_1_indices)) == 0:
+//         return False
+//     # Verify indices are sorted
+//     if not (bit_0_indices == sorted(bit_0_indices) and bit_1_indices == sorted(bit_1_indices)):
+//         return False
+//     # Verify aggregate signature
+//     if not bls_verify_multiple(
+//         pubkeys=[
+//             bls_aggregate_pubkeys([state.validators[i].pubkey for i in bit_0_indices]),
+//             bls_aggregate_pubkeys([state.validators[i].pubkey for i in bit_1_indices]),
+//         ],
+//         message_hashes=[
+//             hash_tree_root(AttestationDataAndCustodyBit(data=indexed_attestation.data, custody_bit=0b0)),
+//             hash_tree_root(AttestationDataAndCustodyBit(data=indexed_attestation.data, custody_bit=0b1)),
+//         ],
+//         signature=indexed_attestation.signature,
+//         domain=get_domain(state, DOMAIN_BEACON_ATTESTER, indexed_attestation.data.target.epoch),
+//     ):
+//         return False
+//     return True
+
+pub fn validate_index_attestation<C: Config>(
+    state: &BeaconState<C>,
+    indexed_attestation: &IndexedAttestation<C>,
+) -> Result<(), Error> {
+    let bit_0_indices = &indexed_attestation.custody_bit_0_indices;
+    let bit_1_indices = &indexed_attestation.custody_bit_1_indices;
+
+    if bit_1_indices.is_empty() {
+        return Err(Error::CustodyBit1Set);
+    }
+
+    let max_validators = C::MaxValidatorsPerCommittee::to_usize();
+    if bit_0_indices.len() + bit_1_indices.len() > max_validators {
+        return Err(Error::IndicesExceedMaxValidators);
+    } 
+    
+    if has_common_elements(bit_0_indices, bit_1_indices) {
+        return Err(Error::CustodyBitIndicesIntersect);
+    }
+
+    if !is_sorted(bit_0_indices) || !is_sorted(bit_1_indices) {
+        return Err(Error::CustodyBitIndicesNotSorted)
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
