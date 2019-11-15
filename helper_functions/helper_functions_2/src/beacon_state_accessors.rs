@@ -69,3 +69,12 @@ pub fn get_beacon_proposer_index<C: Config>(
 ) -> Result<ValidatorIndex, Error> {
     Ok(0)
 }
+
+// TODO:
+pub fn get_domain<C: Config>(
+    _state: &BeaconState<C>,
+    _domain_type: DomainType,
+    _message_epoch: Option<Epoch>,
+) -> Domain {
+    0
+}

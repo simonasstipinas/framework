@@ -3,10 +3,17 @@ use types::{
     beacon_state::BeaconState,
     config::Config,
     primitives::{Epoch, H256},
-    types::{AttestationData, IndexedAttestation, Validator},
+    types::{AttestationData, AttestationDataAndCustodyBit, IndexedAttestation, Validator},
 };
 use typenum::Unsigned;
 use itertools::Itertools;
+use crate::{crypto, beacon_state_accessors as accessors};
+use bls::{AggregatePublicKey, AggregateSignature};
+use tree_hash::TreeHash;
+use ssz_types::VariableList;
+use std::convert::TryFrom;
+
+type ValidatorIndexList<C: Config> = VariableList<u64, C::MaxValidatorsPerCommittee>;
 
 // Check if validator is active
 pub fn is_active_validator(validator: &Validator, epoch: Epoch) -> bool {
@@ -44,6 +51,21 @@ where
         data2_iter.any(|y| x == y)
 
     })
+}
+
+fn aggregate_validator_public_keys<C: Config>(
+    indices: &ValidatorIndexList<C>,
+    state: &BeaconState<C>,
+ ) -> Result<AggregatePublicKey, Error> {
+    let mut aggr_pkey = AggregatePublicKey::new();
+    for i in indices.iter() {
+        let ind = usize::try_from(*i).expect("Unable to convert ValidatorIndex to usize for indexing");
+        if state.validators.len() >= ind {
+            return Err(Error::IndexOutOfRange);
+        }
+        aggr_pkey.add(&state.validators[ind].pubkey);
+    }
+    Ok(aggr_pkey)
 }
 
 // ok
@@ -107,6 +129,25 @@ pub fn validate_index_attestation<C: Config>(
     if !is_sorted(bit_0_indices) || !is_sorted(bit_1_indices) {
         return Err(Error::CustodyBitIndicesNotSorted)
     }
+
+    let aggr_pubkey1 = aggregate_validator_public_keys(bit_0_indices, state)?;
+    let aggr_pubkey2 = aggregate_validator_public_keys(bit_1_indices, state)?;
+
+    let hash_1 = AttestationDataAndCustodyBit{
+        data: indexed_attestation.data.clone(),
+        custody_bit: false,
+    }.tree_hash_root();
+    let hash_2 = AttestationDataAndCustodyBit{
+        data: indexed_attestation.data.clone(),
+        custody_bit: true
+    }.tree_hash_root();
+    //TODO:
+    indexed_attestation.signature.verify_multiple(
+        &[&hash_1, &hash_2],
+        accessors::get_domain(state, ),
+        &[&aggr_pubkey1, &aggr_pubkey2]
+    );
+    
 
     Ok(())
 }

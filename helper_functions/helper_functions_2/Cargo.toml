@@ -14,6 +14,8 @@ ring = "0.14.6"
 ethereum-types = '0.6'
 typenum = '1.11.2'
 itertools = '0.8.1'
+tree_hash = '0.1'
+eth2_ssz_types = { path = '../../utils/ssz_types' }
 
 [dev-dependencies]
 rustc-hex = "2.0.1"
