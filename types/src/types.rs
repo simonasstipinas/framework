@@ -1,5 +1,4 @@
 //temporary Lighthouse SSZ and hashing implementation
-use bls::PublicKeyBytes;
 use serde::{Deserialize, Serialize};
 use ssz_derive::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
@@ -16,7 +15,7 @@ pub struct Attestation<C: Config> {
     pub aggregation_bits: BitList<C::MaxValidatorsPerCommittee>,
     pub data: AttestationData,
     pub custody_bits: BitList<C::MaxValidatorsPerCommittee>,
-    pub signature: Signature,
+    pub signature: AggregateSignature,
 }
 
 #[derive(
@@ -131,7 +130,7 @@ pub struct DepositData {
     pub withdrawal_credentials: H256,
     pub amount: u64,
     #[signed_root(skip_hashing)]
-    pub signature: Signature,
+    pub signature: SignatureBytes,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize, Serialize, Encode, Decode, TreeHash)]
@@ -162,7 +161,7 @@ pub struct IndexedAttestation<C: Config> {
     pub custody_bit_1_indices: VariableList<u64, C::MaxValidatorsPerCommittee>,
     pub data: AttestationData,
     #[signed_root(skip_hashing)]
-    pub signature: Signature,
+    pub signature: AggregateSignature,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash)]
