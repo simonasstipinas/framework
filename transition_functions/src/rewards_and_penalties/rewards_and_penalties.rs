@@ -1,8 +1,20 @@
-fn get_base_reward(state: BeaconState, index: ValidatorIndex) -> Gwei{
-    //!let total_balance = get_total_active_balance(state);
-    //!let effective_balance = state.validators[index].effective_balance;
-    //!return Gwei(effective_balance * BASE_REWARD_FACTOR / integer_squareroot(total_balance) / BASE_REWARDS_PER_EPOCH);
+use helper_functions;
+
+fn get_base_reward<T: Config>(state: BeaconState<T>, index: ValidatorIndex) -> Gwei{
+    let total_balance = get_total_active_balance(state);
+    let effective_balance = state.validators[index].effective_balance;
+    return Gwei(effective_balance * T::base_reward_factor() / integer_squareroot(total_balance) / T::base_rewards_per_epoch());
     return Gwei(0);
+}
+
+#[test]
+fn test_base_reward() {
+    assert_eq!(1,1);
+    let mut bs: BeaconState<MainnetConfig> = BeaconState {
+        ..BeaconState::default()
+    };
+    let mut index = 0;
+    
 }
 
 fn get_attestation_deltas(state: BeaconState) -> Tuple[Sequence[Gwei], Sequence[Gwei]]{
