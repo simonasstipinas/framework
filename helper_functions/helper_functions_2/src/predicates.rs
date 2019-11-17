@@ -1,7 +1,7 @@
 use crate::error::Error;
 use types::{
     beacon_state::BeaconState,
-    config::Config,
+    config::{Config},
     primitives::{Epoch, H256},
     types::{AttestationData, AttestationDataAndCustodyBit, IndexedAttestation, Validator},
 };
@@ -75,7 +75,7 @@ pub fn validate_indexed_attestation<C: Config>(
     let bit_0_indices = &indexed_attestation.custody_bit_0_indices;
     let bit_1_indices = &indexed_attestation.custody_bit_1_indices;
 
-    if bit_1_indices.is_empty() {
+    if !bit_1_indices.is_empty() {
         return Err(Error::CustodyBit1Set);
     }
 
@@ -114,16 +114,6 @@ pub fn validate_indexed_attestation<C: Config>(
     }
 }
 
-//  """
-//     Check if ``leaf`` at ``index`` verifies against the Merkle ``root`` and ``branch``.
-//     """
-//     value = leaf
-//     for i in range(depth):
-//         if index // (2**i) % 2:
-//             value = hash(branch[i] + value)
-//         else:
-//             value = hash(value + branch[i])
-//     return value == root
 pub fn is_valid_merkle_branch(
     leaf: &H256,
     branch: &[H256],
@@ -429,5 +419,24 @@ mod tests {
             0, // Wrong index 
             &root)
         .unwrap());
+    }
+
+    pub mod validate_indexed_attestation_tests {
+        use super::*;
+        use types::config::MainnetConfig;
+
+        #[test]
+        fn custody_bit1_set() {
+            let state: BeaconState<MainnetConfig> = BeaconState::default();
+            let mut attestation: IndexedAttestation<MainnetConfig> =
+                IndexedAttestation::default();
+            attestation.custody_bit_1_indices.push(1).expect(
+                "Unable to add custody bit index");
+
+            assert_eq!(
+                validate_indexed_attestation(&state, &attestation),
+                Err(Error::CustodyBit1Set)
+            );
+        }
     }
 }
