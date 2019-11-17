@@ -13,7 +13,7 @@ use tree_hash::TreeHash;
 use ssz_types::VariableList;
 use std::convert::TryFrom;
 
-type ValidatorIndexList<C: Config> = VariableList<u64, C::MaxValidatorsPerCommittee>;
+type ValidatorIndexList<C> = VariableList<u64, <C as Config>::MaxValidatorsPerCommittee>;
 
 // Check if validator is active
 pub fn is_active_validator(validator: &Validator, epoch: Epoch) -> bool {
@@ -68,7 +68,7 @@ fn aggregate_validator_public_keys<C: Config>(
     Ok(aggr_pkey)
 }
 
-pub fn validate_index_attestation<C: Config>(
+pub fn validate_indexed_attestation<C: Config>(
     state: &BeaconState<C>,
     indexed_attestation: &IndexedAttestation<C>,
 ) -> Result<(), Error> {
@@ -112,6 +112,47 @@ pub fn validate_index_attestation<C: Config>(
         true => Ok(()),
         false => Err(Error::InvalidSignature),
     }
+}
+
+//  """
+//     Check if ``leaf`` at ``index`` verifies against the Merkle ``root`` and ``branch``.
+//     """
+//     value = leaf
+//     for i in range(depth):
+//         if index // (2**i) % 2:
+//             value = hash(branch[i] + value)
+//         else:
+//             value = hash(value + branch[i])
+//     return value == root
+pub fn is_valid_merkle_branch<C: Config>(
+    leaf: &H256,
+    branch: &[H256],
+    depth: u64,
+    index: u64,
+    root: &H256,
+) ->Result<bool, Error> {
+    let mut value_bytes = leaf.as_bytes().to_vec();    
+    let depth_s = usize::try_from(depth).expect("Error converting to usize for indexing");
+    let index_s = usize::try_from(depth).expect("Error converting to usize for indexing");
+
+    if branch.len() < depth_s || branch.len() <= index_s {
+        return Err(Error::IndexOutOfRange);
+    }
+
+    let mut branch_bytes: Vec<u8>;
+    for i in 0..depth_s {
+        let ith_bit = (index >> i) & 0x01;
+        branch_bytes = branch[i].as_bytes().to_vec();
+        if ith_bit == 1 {
+            branch_bytes.append(&mut value_bytes);
+            value_bytes = crypto::hash(branch_bytes.as_slice());
+        } else {
+            value_bytes.append(&mut branch_bytes);
+            value_bytes = crypto::hash(value_bytes.as_slice());
+        }
+    }
+
+    Ok(value_bytes.as_slice() == root.as_bytes())
 }
 
 #[cfg(test)]
