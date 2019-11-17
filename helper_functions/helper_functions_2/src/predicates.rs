@@ -8,10 +8,10 @@ use types::{
 use typenum::Unsigned;
 use itertools::Itertools;
 use crate::{crypto, beacon_state_accessors as accessors};
-use bls::{AggregatePublicKey, AggregateSignature};
+use bls::{AggregatePublicKey};
 use tree_hash::TreeHash;
 use ssz_types::VariableList;
-use std::convert::TryFrom;
+use std::convert::{TryFrom};
 
 type ValidatorIndexList<C> = VariableList<u64, <C as Config>::MaxValidatorsPerCommittee>;
 
@@ -124,7 +124,7 @@ pub fn validate_indexed_attestation<C: Config>(
 //         else:
 //             value = hash(value + branch[i])
 //     return value == root
-pub fn is_valid_merkle_branch<C: Config>(
+pub fn is_valid_merkle_branch(
     leaf: &H256,
     branch: &[H256],
     depth: u64,
@@ -133,16 +133,17 @@ pub fn is_valid_merkle_branch<C: Config>(
 ) ->Result<bool, Error> {
     let mut value_bytes = leaf.as_bytes().to_vec();    
     let depth_s = usize::try_from(depth).expect("Error converting to usize for indexing");
-    let index_s = usize::try_from(depth).expect("Error converting to usize for indexing");
+    let index_s = usize::try_from(index).expect("Error converting to usize for indexing");
 
-    if branch.len() < depth_s || branch.len() <= index_s {
+
+    if branch.len() < depth_s {
         return Err(Error::IndexOutOfRange);
     }
 
     let mut branch_bytes: Vec<u8>;
-    for i in 0..depth_s {
-        let ith_bit = (index >> i) & 0x01;
-        branch_bytes = branch[i].as_bytes().to_vec();
+    for (i, node) in branch.iter().enumerate().take(depth_s) {
+        let ith_bit = (index_s >> i) & 0x01;
+        branch_bytes = node.as_bytes().to_vec();
         if ith_bit == 1 {
             branch_bytes.append(&mut value_bytes);
             value_bytes = crypto::hash(branch_bytes.as_slice());
@@ -152,7 +153,7 @@ pub fn is_valid_merkle_branch<C: Config>(
         }
     }
 
-    Ok(value_bytes.as_slice() == root.as_bytes())
+    Ok(H256::from_slice(&value_bytes) == *root)
 }
 
 #[cfg(test)]
@@ -308,5 +309,125 @@ mod tests {
         data_2.target.root = H256([1; 32]);
 
         assert!(!is_slashable_attestation_data(&data_1, &data_2));
+    }
+
+    fn hash_concat(v1: H256, v2: H256) -> H256 {
+        let mut val = v1.as_bytes().to_vec();
+        val.append(&mut v2.as_bytes().to_vec());
+        H256::from_slice(crypto::hash(val.as_slice()).as_slice())
+    }
+
+    #[test]
+    fn test_valid_merkle_branch() {
+        let leaf_b00 = H256::from([0xAA; 32]);
+        let leaf_b01 = H256::from([0xBB; 32]);
+        let leaf_b10 = H256::from([0xCC; 32]);
+        let leaf_b11 = H256::from([0xDD; 32]);
+
+        let node_b0x = hash_concat(leaf_b00, leaf_b01);
+        let node_b1x = hash_concat(leaf_b10, leaf_b11);
+
+        let root = hash_concat(node_b0x, node_b1x);
+
+        assert!(is_valid_merkle_branch(
+            &leaf_b00, 
+            &[leaf_b01, node_b1x], 
+            2, 
+            0, 
+            &root)
+        .unwrap());
+
+        assert!(is_valid_merkle_branch(
+            &leaf_b01, 
+            &[leaf_b00, node_b1x], 
+            2, 
+            1, 
+            &root)
+        .unwrap());
+
+        assert!(is_valid_merkle_branch(
+            &leaf_b10, 
+            &[leaf_b11, node_b0x], 
+            2, 
+            2, 
+            &root)
+        .unwrap());
+
+        assert!(is_valid_merkle_branch(
+            &leaf_b11, 
+            &[leaf_b10, node_b0x], 
+            2, 
+            3, 
+            &root)
+        .unwrap());
+    }
+
+
+    #[test]
+    fn test_merkle_branch_depth() {
+        let leaf_b00 = H256::from([0xAF; 32]);
+        let leaf_b01 = H256::from([0xBB; 32]);
+        let leaf_b10 = H256::from([0xCE; 32]);
+        let leaf_b11 = H256::from([0xDB; 32]);
+
+        let node_b0x = hash_concat(leaf_b00, leaf_b01);
+        let node_b1x = hash_concat(leaf_b10, leaf_b11);
+
+        let root = hash_concat(node_b0x, node_b1x);
+
+        assert!(is_valid_merkle_branch(
+            &leaf_b00, 
+            &[leaf_b01], 
+            1, 
+            0, 
+            &node_b0x)
+        .unwrap());
+
+        assert_eq!(
+            is_valid_merkle_branch(
+                &leaf_b00, 
+                &[leaf_b01], 
+                3, 
+                0, 
+                &root), 
+            Err(Error::IndexOutOfRange)
+        );
+    }
+
+    #[test]
+    fn test_invalid_merkle_branch() {
+        let leaf_b00 = H256::from([0xFF; 32]);
+        let leaf_b01 = H256::from([0xAB; 32]);
+        let leaf_b10 = H256::from([0xCE; 32]);
+        let leaf_b11 = H256::from([0xDB; 32]);
+
+        let node_b0x = hash_concat(leaf_b00, leaf_b01);
+        let node_b1x = hash_concat(leaf_b10, leaf_b11);
+
+        let root = hash_concat(node_b0x, node_b1x);
+
+        assert!(!is_valid_merkle_branch(
+            &leaf_b00, 
+            &[leaf_b01, node_b0x], // should be node_b1x 
+            2, 
+            0, 
+            &root)
+        .unwrap());
+
+        assert!(!is_valid_merkle_branch(
+            &leaf_b11, 
+            &[leaf_b10, node_b0x],
+            2, 
+            3, 
+            &H256::from([0xFF; 32])) // Wrong root
+        .unwrap());
+
+        assert!(!is_valid_merkle_branch(
+            &leaf_b11, 
+            &[leaf_b10, node_b0x],
+            2, 
+            0, // Wrong index 
+            &root)
+        .unwrap());
     }
 }
