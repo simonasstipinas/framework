@@ -8,6 +8,7 @@ use types::consts::*;
 use types::types::*;
 use types::{ beacon_state::*, config::{ Config, MainnetConfig }};
 use std::collections::BTreeSet;
+use std::convert::TryInto;
 
 fn process_voluntary_exit<T: Config>(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index as usize];
@@ -28,46 +29,51 @@ fn process_voluntary_exit<T: Config>(state: &mut BeaconState<T>,exit: VoluntaryE
 
 fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) { 
     //# Verify the Merkle branch  is_valid_merkle_branch
-    //! what it do
-    //! ????????????????????????
-    assert!(
-       //? leaf=hash_tree_root(deposit.data),
-        branch=deposit.proof &&
-        depth=DEPOSIT_CONTRACT_TREE_DEPTH + 1 &&  //# Add 1 for the `List` length mix-in
-        index=state.eth1_deposit_index &&
-        root=state.eth1_data.deposit_root
-    );
+
+    assert!(is_valid_merkle_branch(
+        hash_tree_root(deposit.data), 
+        &deposit.proof, 
+        DEPOSIT_CONTRACT_TREE_DEPTH + 1, 
+        state.eth1_deposit_index, 
+        &state.eth1_data.deposit_root).unwrap());
 
     //# Deposits must be processed in order
     state.eth1_deposit_index += 1;
 
     let pubkey = deposit.data.pubkey;
     let amount = deposit.data.amount;
-    let validator_pubkeys = [v.pubkey for v in state.validators];
-    if pubkey not in validator_pubkeys:
-        //# Verify the deposit signature (proof of possession) for new validators.
-        //# Note: The deposit contract does not check signatures.
-        //# Note: Deposits are valid across forks, thus the deposit domain is retrieved directly from `compute_domain`.
-        //!let domain = compute_domain(DOMAIN_DEPOSIT)
-        //!if not bls_verify(pubkey, signing_root(deposit.data), deposit.data.signature, domain):
-          //!  return
 
-        //# Add validator and balance entries
-        state.validators.append(Validator(
-            pubkey=pubkey,
-            withdrawal_credentials=deposit.data.withdrawal_credentials,
-            activation_eligibility_epoch=FAR_FUTURE_EPOCH,
-            activation_epoch=FAR_FUTURE_EPOCH,
-            exit_epoch=FAR_FUTURE_EPOCH,
-            withdrawable_epoch=FAR_FUTURE_EPOCH,
-            effective_balance=min(amount - amount % EFFECTIVE_BALANCE_INCREMENT, MAX_EFFECTIVE_BALANCE),
-        ))
-        state.balances.append(amount)
-    else{
-        # Increase balance by deposit amount
-        index = ValidatorIndex(validator_pubkeys.index(pubkey))
-        //!increase_balance(state, index, amount)
+    for (index, v) in state.validators.iter().enumerate() {
+        // bls::PublicKeyBytes::from_bytes(&v.pubkey.as_bytes()).unwrap()
+        if  v.pubkey.try_into().unwrap() == pubkey {
+            //# Increase balance by deposit amount
+            index = ValidatorIndex(index);
+            increase_balance(state, index as u64, amount);
+            return;
+        }
     }
+    //# Verify the deposit signature (proof of possession) for new validators.
+    //# Note: The deposit contract does not check signatures.
+    //# Note: Deposits are valid across forks, thus the deposit domain is retrieved directly from `compute_domain`.
+    let domain = compute_domain(T::domain_deposit() as u32, None);
+
+    if !bls_verify(&pubkey, signing_root(deposit.data), &deposit.data.signature.try_into().unwrap(), domain).unwrap() {
+        return;
+    }
+    
+    //# Add validator and balance entries
+// bls::PublicKey::from_bytes(&pubkey.as_bytes()).unwrap()
+    state.validators.push(Validator{
+        pubkey: (&pubkey).try_into().unwrap(),
+        withdrawal_credentials: deposit.data.withdrawal_credentials,
+        activation_eligibility_epoch: T::far_future_epoch(),
+        activation_epoch: T::far_future_epoch(),
+        exit_epoch: T::far_future_epoch(),
+        withdrawable_epoch: T::far_future_epoch(),
+        effective_balance: std::cmp::min(amount - (amount % T::effective_balance_increment()), T::max_effective_balance()),
+        slashed: false,
+    });
+    &state.balances.push(amount);
 }
 
 fn process_block_header<T: Config>(state: BeaconState<T>, block: BeaconBlock<T>) {
@@ -90,17 +96,17 @@ fn process_block_header<T: Config>(state: BeaconState<T>, block: BeaconBlock<T>)
     let proposer = state.validators[get_beacon_proposer_index(&state).unwrap() as usize];
     assert! (!proposer.slashed);
     //# Verify proposer signature
-    assert! (bls_verify(&bls::PublicKeyBytes::from_bytes(&proposer.pubkey.as_bytes()).unwrap(), signing_root(block), &bls::SignatureBytes::from_bytes(&block.signature.as_bytes()).unwrap(), get_domain(&state, DOMAIN_BEACON_PROPOSER)).unwrap()); // get_domain needs Option<Epoch> as 3rd param
+    assert! (bls_verify(&proposer.pubkey.try_into().unwrap(), signing_root(block), &block.signature.try_into().unwrap(), get_domain(&state, T::domain_beacon_proposer() as u32, None)).unwrap());
 }
 
 fn process_randao<T: Config>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
     let epoch = get_current_epoch(&state);
     //# Verify RANDAO reveal
     let proposer = state.validators[get_beacon_proposer_index(&state).unwrap() as usize];
-    assert! (bls_verify(&bls::PublicKeyBytes::from_bytes(&proposer.pubkey.as_bytes()).unwrap(), hash_tree_root(epoch), &bls::SignatureBytes::from_bytes(&body.randao_reveal.as_bytes()).unwrap(), get_domain(state, DOMAIN_RANDAO)).unwrap());
+    assert! (bls_verify(&(proposer.pubkey).try_into().unwrap(), hash_tree_root(epoch), &body.randao_reveal.try_into().unwrap(), get_domain(&state, T::domain_randao() as u32, None)).unwrap());
     //# Mix in RANDAO reveal
     let mix = xor(get_randao_mix(&state, epoch).unwrap().as_bytes(), &hash(&body.randao_reveal.as_bytes()));
-    state.randao_mixes[epoch % EPOCHS_PER_HISTORICAL_VECTOR] = mix;
+    state.randao_mixes[epoch % T::EpochsPerHistoricalVector] = mix;
 }
 
 fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_slashing: ProposerSlashing){
@@ -114,9 +120,9 @@ fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_sla
     // Signatures are valid
     let headers: [BeaconBlockHeader; 2] = [proposer_slashing.header_1, proposer_slashing.header_2];
     for header in &headers {
-        let domain = get_domain(state, DOMAIN_BEACON_PROPOSER, Some(compute_epoch_at_slot(header.slot)));
+        let domain = get_domain(state, T::domain_beacon_proposer() as u32, Some(compute_epoch_at_slot(header.slot)));
         //# Sekanti eilutė tai fucking amazing. signed_root helperiuose užkomentuota
-        assert!(bls_verify(&bls::PublicKeyBytes::from_bytes(&proposer.pubkey.as_bytes()).unwrap(), signing_root(header), &bls::SignatureBytes::from_bytes(&header.signature.as_bytes()).unwrap(), domain).unwrap()); 
+        assert!(bls_verify(&proposer.pubkey.try_into().unwrap(), signing_root(header), &header.signature.try_into().unwrap(), domain).unwrap()); 
     }
 
     slash_validator(state, proposer_slashing.proposer_index);
@@ -130,15 +136,31 @@ fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_sla
     assert!(is_valid_indexed_attestation(state, &attestation_2).is_ok()); 
 
     let mut slashed_any = false;
-    let attesting_indices_1 = attestation_1.custody_bit_0_indices + attestation_1.custody_bit_1_indices;
-    let attesting_indices_2 = attestation_2.custody_bit_0_indices + attestation_2.custody_bit_1_indices;
 
-    for index in sorted(set(attesting_indices_1).intersection(attesting_indices_2)){ //# We can use a BtreeSet instead. It's sorted and a set.
-         if is_slashable_validator(&state.validators[index as usize], get_current_epoch(state)){
-            slash_validator(state, index);
+    // Turns attesting_indices into a binary tree set. It's a set and it's ordered :)
+    let attesting_indices_1 = attestation_1
+        .custody_bit_0_indices
+        .iter()
+        .chain(&attestation_1.custody_bit_1_indices)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let attesting_indices_2 = attestation_2
+        .custody_bit_0_indices
+        .iter()
+        .chain(&attestation_2.custody_bit_1_indices)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+
+    let mut slashable_indices = vec![];
+
+    for index in &attesting_indices_1 & &attesting_indices_2 {
+        let validator = state.validators[index as usize];
+
+        if is_slashable_validator(&validator, get_current_epoch(state)) {
+            slash_validator(&mut state, index);
             slashed_any = true;
-         }
-     }
+        }
+    }
     assert!(slashed_any);
 }
 
@@ -146,7 +168,7 @@ fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attes
     let data = attestation.data;
     assert!(data.index < get_committee_count_at_slot(state, data.slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
     assert!(data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)));
-    assert!(data.slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot && state.slot <= data.slot + SLOTS_PER_EPOCH);
+    assert!(data.slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= data.slot + T::SlotsPerEpoch);
 
     let committee = get_beacon_committee(state, data.slot, data.index).unwrap();
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
@@ -200,7 +222,7 @@ fn process_operations<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBo
 }
 
 #[cfg(test)]
-mod block_processing_tests {
+mod scessing_tests {
     use types::{beacon_state::*, config::MainnetConfig};
     // use crate::{config::*};
     use super::*;
