@@ -13,18 +13,18 @@ use std::convert::TryInto;
 fn process_voluntary_exit<T: Config>(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index as usize];
     // Verify the validator is active
-    assert! (is_active_validator(validator, get_current_epoch(state)))
+    assert!(is_active_validator(&validator, get_current_epoch(state)));
     // Verify the validator has not yet exited
-    assert! validator.exit_epoch == FAR_FUTURE_EPOCH
+    assert!(validator.exit_epoch == T::far_future_epoch());
     // Exits must specify an epoch when they become valid; they are not valid before then
-    assert! (get_current_epoch(state) >= exit.epoch)
+    assert!(get_current_epoch(state) >= exit.epoch);
     // Verify the validator has been active long enough
-    assert! (get_current_epoch(state) >= validator.activation_epoch + PERSISTENT_COMMITTEE_PERIOD)
+    assert!(get_current_epoch(state) >= validator.activation_epoch + T::persistent_committee_period());
     // Verify signature
-    domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, exit.epoch)
-    assert! (bls_verify(validator.pubkey, signing_root(exit), exit.signature, domain))
+    let domain = get_domain(state, T::domain_voluntary_exit() as u32, Some(exit.epoch));
+    assert!(bls_verify(&validator.pubkey.try_into().unwrap(), signing_root(exit), &exit.signature.try_into().unwrap(), domain).unwrap());
     // Initiate exit
-    initiate_validator_exit(state, exit.validator_index)
+    initiate_validator_exit(state, exit.validator_index);
 }
 
 fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) { 
@@ -124,7 +124,7 @@ fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_sla
     let headers: [BeaconBlockHeader; 2] = [proposer_slashing.header_1, proposer_slashing.header_2];
     for header in &headers {
         let domain = get_domain(state, T::domain_beacon_proposer() as u32, Some(compute_epoch_at_slot(header.slot)));
-        //# Sekanti eilutė tai fucking amazing. signed_root helperiuose užkomentuota
+        //# Sekanti eilutė tai ******* amazing. signed_root helperiuose užkomentuota
         assert!(bls_verify(&proposer.pubkey.try_into().unwrap(), signing_root(header), &header.signature.try_into().unwrap(), domain).unwrap()); 
     }
 
@@ -215,19 +215,21 @@ fn process_operations<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBo
     //# Verify that outstanding deposits are processed up to the maximum number of deposits
     assert_eq!(body.deposits.len(), std::cmp::min(MAX_DEPOSITS, (state.eth1_data.deposit_count - state.eth1_deposit_index) as usize)); 
 
-    for (operations, function) in (
-        (body.proposer_slashings, process_proposer_slashing),
-        (body.attester_slashings, process_attester_slashing),
-        (body.attestations, process_attestation),
-        (body.deposits, process_deposit),
-        (body.voluntary_exits, process_voluntary_exit),
-        //# @process_shard_receipt_proofs
-    ){
-        for operation in operations{
-            function(state, operation);
-        }
+    for proposer_slashing in body.proposer_slashings.iter() {
+        process_proposer_slashing(&mut state, *proposer_slashing);
     }
-
+    for attester_slashing in body.attester_slashings.iter() {
+        process_attester_slashing(&mut state, *attester_slashing);
+    }
+    for attestation in body.attestations.iter() {
+        process_attestation(&mut state, *attestation);
+    }
+    for deposit in body.deposits.iter() {
+        process_deposit(&mut state, *deposit);
+    }
+    for voluntary_exit in body.voluntary_exits.iter() {
+        process_voluntary_exit(&mut state, *voluntary_exit);
+    }
 }
 
 #[cfg(test)]
