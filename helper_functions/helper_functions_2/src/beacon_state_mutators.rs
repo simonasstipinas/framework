@@ -80,7 +80,46 @@ pub fn slash_validator<C: Config>(
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
+    use super::*;
+    use types::types::Validator;
+    use types::primitives::H256;
+    use bls::{PublicKey, SecretKey};
+    use types::config::MainnetConfig;
 
     //fn mock_beaconstate() -> BeaconState {}
+
+    const EPOCH_MAX: u64 = u64::max_value();
+
+    fn default_validator() -> Validator {
+        Validator {
+            effective_balance: 0,
+            slashed: false,
+            activation_eligibility_epoch: EPOCH_MAX,
+            activation_epoch: EPOCH_MAX,
+            exit_epoch: EPOCH_MAX,
+            withdrawable_epoch: EPOCH_MAX,
+            withdrawal_credentials: H256([0; 32]),
+            pubkey: PublicKey::from_secret_key(&SecretKey::random()),
+        }
+    }
+
+    mod slash_validator_tests {
+        use super::*;
+
+        // #[test]
+        // fn test_exit_epoch() {
+        //     let mut state: BeaconState<MainnetConfig> = BeaconState::default();
+        //     state.validators.push(default_validator());
+
+        //     let mut state_copy = state.clone();
+        //     initiate_validator_exit(&mut state_copy, 0);
+
+        //     slash_validator(&mut state, 0, None).expect("slash_validator should succeed");
+
+        //     assert_eq!(
+        //         state_copy.validators[0].exit_epoch,
+        //         state.validators[0].exit_epoch
+        //     );
+        // }
+    }
 }
