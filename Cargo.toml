@@ -10,6 +10,7 @@ members = [
     'utils/tree_hash',
     'utils/tree_hash_derive',
     'transition_functions',
+    'core',
 ]
 
 [profile.release]
