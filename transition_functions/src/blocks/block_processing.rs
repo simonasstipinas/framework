@@ -42,7 +42,6 @@ fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) {
 
     let pubkey = deposit.data.pubkey;
     let amount = deposit.data.amount;
-    // let validator_pubkeys: Vec<bls::PublicKey> = Vec::new();
 
     for (index, v) in state.validators.iter().enumerate() {
         // bls::PublicKeyBytes::from_bytes(&v.pubkey.as_bytes()).unwrap()
@@ -53,13 +52,11 @@ fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) {
             return;
         }
     }
-    // if !(pubkey in validator_pubkeys):
     //# Verify the deposit signature (proof of possession) for new validators.
     //# Note: The deposit contract does not check signatures.
     //# Note: Deposits are valid across forks, thus the deposit domain is retrieved directly from `compute_domain`.
     let domain = compute_domain(T::domain_deposit() as u32, None);
 
-    // &bls::SignatureBytes::from_bytes(&deposit.data.signature.as_bytes()).unwrap()
     if !bls_verify(&pubkey, signing_root(deposit.data), &deposit.data.signature.try_into().unwrap(), domain).unwrap() {
         return;
     }
@@ -99,7 +96,7 @@ fn process_block_header<T: Config>(state: BeaconState<T>, block: BeaconBlock<T>)
     let proposer = state.validators[get_beacon_proposer_index(&state).unwrap() as usize];
     assert! (!proposer.slashed);
     //# Verify proposer signature
-    assert! (bls_verify(&proposer.pubkey.try_into().unwrap(), signing_root(block), &block.signature.try_into().unwrap(), get_domain(&state, T::domain_beacon_proposer() as u32, None)).unwrap()); // get_domain needs Option<Epoch> as 3rd param
+    assert! (bls_verify(&proposer.pubkey.try_into().unwrap(), signing_root(block), &block.signature.try_into().unwrap(), get_domain(&state, T::domain_beacon_proposer() as u32, None)).unwrap());
 }
 
 fn process_randao<T: Config>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
@@ -139,15 +136,31 @@ fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_sla
     assert!(is_valid_indexed_attestation(state, &attestation_2).is_ok()); 
 
     let mut slashed_any = false;
-    let attesting_indices_1 = attestation_1.custody_bit_0_indices + attestation_1.custody_bit_1_indices;
-    let attesting_indices_2 = attestation_2.custody_bit_0_indices + attestation_2.custody_bit_1_indices;
 
-    for index in sorted(set(attesting_indices_1).intersection(attesting_indices_2)){ //# We can use a BtreeSet instead. It's sorted and a set.
-         if is_slashable_validator(&state.validators[index as usize], get_current_epoch(state)){
-            slash_validator(state, index);
+    // Turns attesting_indices into a binary tree set. It's a set and it's ordered :)
+    let attesting_indices_1 = attestation_1
+        .custody_bit_0_indices
+        .iter()
+        .chain(&attestation_1.custody_bit_1_indices)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let attesting_indices_2 = attestation_2
+        .custody_bit_0_indices
+        .iter()
+        .chain(&attestation_2.custody_bit_1_indices)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+
+    let mut slashable_indices = vec![];
+
+    for index in &attesting_indices_1 & &attesting_indices_2 {
+        let validator = state.validators[index as usize];
+
+        if is_slashable_validator(&validator, get_current_epoch(state)) {
+            slash_validator(&mut state, index);
             slashed_any = true;
-         }
-     }
+        }
+    }
     assert!(slashed_any);
 }
 
@@ -215,7 +228,7 @@ fn process_operations<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBo
 }
 
 #[cfg(test)]
-mod block_processing_tests {
+mod scessing_tests {
     use types::{beacon_state::*, config::MainnetConfig};
     // use crate::{config::*};
     use super::*;
