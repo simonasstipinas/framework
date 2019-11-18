@@ -203,6 +203,9 @@ where
     fn domain_voluntary_exit() -> u64 {
         4
     }
+    fn epochs_per_historical_vector() -> u64 {
+        0x1_0000
+    }
     fn effective_balance_increment() -> u64 {
         1_000_000_000
     }

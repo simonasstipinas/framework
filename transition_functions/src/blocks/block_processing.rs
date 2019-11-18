@@ -105,8 +105,11 @@ fn process_randao<T: Config>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
     let proposer = state.validators[get_beacon_proposer_index(&state).unwrap() as usize];
     assert! (bls_verify(&(proposer.pubkey).try_into().unwrap(), hash_tree_root(epoch), &body.randao_reveal.try_into().unwrap(), get_domain(&state, T::domain_randao() as u32, None)).unwrap());
     //# Mix in RANDAO reveal
-    let mix = xor(get_randao_mix(&state, epoch).unwrap().as_bytes(), &hash(&body.randao_reveal.as_bytes()));
-    state.randao_mixes[epoch % T::EpochsPerHistoricalVector] = mix;
+    let mix = xor(get_randao_mix(&state, epoch).unwrap().as_bytes(), &hash(&body.randao_reveal.as_bytes())).unwrap();
+    let mut array = [0; 32];
+    let mix = &mix[..array.len()]; // panics if not enough data
+    array.copy_from_slice(mix);
+    state.randao_mixes[(epoch % T::epochs_per_historical_vector()) as usize] = array.try_into().unwrap();
 }
 
 fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_slashing: ProposerSlashing){
