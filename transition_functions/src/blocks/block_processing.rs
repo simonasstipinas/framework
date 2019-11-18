@@ -13,18 +13,18 @@ use std::convert::TryInto;
 fn process_voluntary_exit<T: Config>(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index as usize];
     // Verify the validator is active
-    //!assert! (is_active_validator(validator, get_current_epoch(state)))
+    assert! (is_active_validator(validator, get_current_epoch(state)))
     // Verify the validator has not yet exited
     assert! validator.exit_epoch == FAR_FUTURE_EPOCH
     // Exits must specify an epoch when they become valid; they are not valid before then
-    //!assert! (get_current_epoch(state) >= exit.epoch)
+    assert! (get_current_epoch(state) >= exit.epoch)
     // Verify the validator has been active long enough
-    //!assert! (get_current_epoch(state) >= validator.activation_epoch + PERSISTENT_COMMITTEE_PERIOD)
+    assert! (get_current_epoch(state) >= validator.activation_epoch + PERSISTENT_COMMITTEE_PERIOD)
     // Verify signature
-    //!domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, exit.epoch)
-    //!assert! (bls_verify(validator.pubkey, signing_root(exit), exit.signature, domain))
+    domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, exit.epoch)
+    assert! (bls_verify(validator.pubkey, signing_root(exit), exit.signature, domain))
     // Initiate exit
-    //!initiate_validator_exit(state, exit.validator_index)
+    initiate_validator_exit(state, exit.validator_index)
 }
 
 fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) { 
@@ -153,9 +153,9 @@ fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_sla
 
 fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attestation<T>){
     let data = attestation.data;
-    assert!(data.index < get_committee_count_at_slot(state, data.slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
+    //assert!(data.index < get_committee_count_at_slot(state, data.slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
     assert!(data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)));
-    assert!(data.slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= data.slot + T::SlotsPerEpoch);
+    //assert!(data.slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= data.slot + T::SlotsPerEpoch);
 
     let committee = get_beacon_committee(state, data.slot, data.index).unwrap();
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
@@ -164,7 +164,7 @@ fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attes
     let pending_attestation = PendingAttestation{
         data: data,
         aggregation_bits: attestation.aggregation_bits,
-        inclusion_delay: state.slot - data.slot,
+        inclusion_delay: state.slot,//! - data.slot,
         proposer_index: get_beacon_proposer_index(state).unwrap(),
     };
 
@@ -184,7 +184,13 @@ fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attes
 
 fn process_eth1_data<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBody<T>){
     state.eth1_data_votes.push(body.eth1_data);
-    if state.eth1_data_votes.count(body.eth1_data) * 2 > SLOTS_PER_ETH1_VOTING_PERIOD{
+    let num_votes = state
+        .eth1_data_votes
+        .iter()
+        .filter(|vote| *vote == &body.eth1_data)
+        .count();
+
+    if num_votes * 2 > SLOTS_PER_ETH1_VOTING_PERIOD{
         state.eth1_data = body.eth1_data;
     }
 }
