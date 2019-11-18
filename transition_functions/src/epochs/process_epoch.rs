@@ -47,11 +47,6 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
         initiate_validator_exit(state, index as u64);
     }
 
-    // TODO: Translate
-    //     for index in activation_queue[:get_validator_churn_limit(state)]:
-    //         validator = state.validators[index]
-    //         if validator.activation_epoch == FAR_FUTURE_EPOCH:
-    //             validator.activation_epoch = compute_activation_exit_epoch(get_current_epoch(state))
     // Queue validators eligible for activation and not dequeued for activation prior to finalized epoch
     let activation_queue = state
         .validators
