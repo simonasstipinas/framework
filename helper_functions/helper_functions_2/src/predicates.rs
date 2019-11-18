@@ -8,7 +8,7 @@ use types::{
 use typenum::Unsigned;
 use itertools::Itertools;
 use crate::{crypto, beacon_state_accessors as accessors};
-use bls::{AggregatePublicKey};
+use bls::{AggregatePublicKey, AggregateSignature, Signature};
 use tree_hash::TreeHash;
 use ssz_types::VariableList;
 use std::convert::{TryFrom};
@@ -60,7 +60,7 @@ fn aggregate_validator_public_keys<C: Config>(
     let mut aggr_pkey = AggregatePublicKey::new();
     for i in indices.iter() {
         let ind = usize::try_from(*i).expect("Unable to convert ValidatorIndex to usize for indexing");
-        if state.validators.len() >= ind {
+        if state.validators.len() <= ind {
             return Err(Error::IndexOutOfRange);
         }
         aggr_pkey.add(&state.validators[ind].pubkey);
@@ -436,6 +436,121 @@ mod tests {
             assert_eq!(
                 validate_indexed_attestation(&state, &attestation),
                 Err(Error::CustodyBit1Set)
+            );
+        }
+
+        #[test]
+        fn index_set_not_sorted() {
+            let state: BeaconState<MainnetConfig> = BeaconState::default();
+            let mut attestation: IndexedAttestation<MainnetConfig> =
+                IndexedAttestation::default();
+            attestation.custody_bit_0_indices.push(2).expect(
+                "Unable to add custody bit index");
+            attestation.custody_bit_0_indices.push(1).expect(
+                "Unable to add custody bit index");
+            attestation.custody_bit_0_indices.push(3).expect(
+                "Unable to add custody bit index");
+
+            assert_eq!(
+                validate_indexed_attestation(&state, &attestation),
+                Err(Error::CustodyBitIndicesNotSorted)
+            );
+        }
+
+
+        #[test]
+        fn non_existent_validators() {
+            let state: BeaconState<MainnetConfig> = BeaconState::default();
+            let mut attestation: IndexedAttestation<MainnetConfig> =
+                IndexedAttestation::default();
+            attestation.custody_bit_0_indices.push(0).expect(
+                "Unable to add custody bit index");
+
+            assert_eq!(
+                validate_indexed_attestation(&state, &attestation),
+                Err(Error::IndexOutOfRange)
+            );
+        }
+
+        #[test]
+        fn invalid_signature() {
+            let mut state: BeaconState<MainnetConfig> = BeaconState::default();
+            let mut attestation: IndexedAttestation<MainnetConfig> =
+                IndexedAttestation::default();
+            attestation.custody_bit_0_indices.push(0).expect(
+                "Unable to add custody bit index");
+            attestation.custody_bit_0_indices.push(1).expect(
+                "Unable to add custody bit index");
+            attestation.custody_bit_0_indices.push(2).expect(
+                "Unable to add custody bit index");
+
+            // default_validator() generates randome public key
+            state.validators.push(default_validator());
+            state.validators.push(default_validator());
+            state.validators.push(default_validator());
+
+            assert_eq!(
+                validate_indexed_attestation(&state, &attestation),
+                Err(Error::InvalidSignature)
+            );
+        }
+
+        #[test]
+        fn valid_signature() {
+            let mut state: BeaconState<MainnetConfig> = BeaconState::default();
+            let mut attestation: IndexedAttestation<MainnetConfig> =
+                IndexedAttestation::default();
+            attestation.custody_bit_0_indices.push(0).expect(
+                "Unable to add custody bit index");
+            attestation.custody_bit_0_indices.push(1).expect(
+                "Unable to add custody bit index");
+
+            let skey1 = SecretKey::random();
+            let pkey1 = PublicKey::from_secret_key(&skey1);
+            let v1 = Validator{
+                pubkey: pkey1,
+                ..default_validator()
+            };
+
+            let skey2 = SecretKey::random();
+            let pkey2 = PublicKey::from_secret_key(&skey1);
+            let v2 = Validator{
+                pubkey: pkey2,
+                ..default_validator()
+            };
+
+            state.validators.push(v1);
+            state.validators.push(v2);
+
+            attestation.data.beacon_block_root = H256([0xFF; 32]);
+
+            let digest1 = AttestationDataAndCustodyBit{
+                data: attestation.data.clone(),
+                custody_bit: false,
+            }.tree_hash_root();
+
+            let sig1 = Signature::new(
+                digest1.as_slice(),
+                //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
+                accessors::get_domain(&state, 0, Some(attestation.data.target.epoch)),
+                &skey1,
+            );
+            let sig2 = Signature::new(
+                digest1.as_slice(),
+                //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
+                accessors::get_domain(&state, 0, Some(attestation.data.target.epoch)),
+                &skey2,
+            );
+
+            let mut asig = AggregateSignature::new();
+            asig.add(&sig1);
+            asig.add(&sig2);
+
+            attestation.signature = asig;
+
+            assert_eq!(
+                validate_indexed_attestation(&state, &attestation),
+                Ok(())
             );
         }
     }
