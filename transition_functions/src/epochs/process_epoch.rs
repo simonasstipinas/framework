@@ -73,9 +73,9 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
     }
 }
 
-fn process_slashings<T: Config>(state: &mut BeaconState<T>) {
-    let epoch = get_current_epoch(state);
-    let total_balance = get_total_active_balance(state);
+fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
+    let epoch = get_current_epoch(&state);
+    let total_balance = get_total_active_balance(&state);
 
     for (index, validator) in state.validators.iter().enumerate() {
         if validator.slashed && epoch + T::epochs_per_slashings_vector() / 2 == validator.withdrawable_epoch {
@@ -88,8 +88,8 @@ fn process_slashings<T: Config>(state: &mut BeaconState<T>) {
     }
 }
 
-fn process_final_updates<T: Config>(state: BeaconState<T>) {
-    current_epoch = get_current_epoch(state);
+fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
+    current_epoch = get_current_epoch(&state);
     let next_epoch = Epoch(current_epoch + 1);
     //# Reset eth1 data votes
     if (state.slot + 1) % SLOTS_PER_ETH1_VOTING_PERIOD == 0{

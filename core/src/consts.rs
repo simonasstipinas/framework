@@ -10,6 +10,9 @@ pub trait ExpConst {
     fn base_rewards_per_epoch() -> u64 {
         4
     }
+    fn slots_per_epoch() -> u64 {
+        32
+    }
 }
 
 impl ExpConst for MainnetConfig {}

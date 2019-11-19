@@ -167,21 +167,31 @@ fn process_attester_slashing<T: Config + ExpConst>(state: &mut BeaconState<T>, a
     assert!(slashed_any);
 }
 
+fn get_attestation_data_index<T: Config + ExpConst>(state: BeaconState<T>, attestation_data: AttestationData) -> Result<u64, Error> {
+    for (index, x) in state.current_epoch_attestations.iter().enumerate() {
+        if x.data == attestation_data {
+            return Ok(index as u64);
+        }
+    }
+    return Err(Error::SlotOutOfBounds);
+}
+
 fn process_attestation<T: Config + ExpConst>(state: &mut BeaconState<T>, attestation: Attestation<T>){
     let data = attestation.data;
-    let attestation_slot = state.get_attestation_data_slot(&attestation.data)
-    assert!(data.index < get_committee_count_at_slot(state, attestation_slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
+    let index = get_attestation_data_index(*state, attestation.data).unwrap();
+    let attestation_slot = state.slot;
+    assert!(index < get_committee_count_at_slot(state, attestation_slot).unwrap()); //# Nėra index ir slot. ¯\_(ツ)_/¯
     assert!(data.target.epoch == get_previous_epoch(state) || data.target.epoch == get_current_epoch(state));
-    assert!(attestation_slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= attestation_slot + T::SlotsPerEpoch);
+    assert!(attestation_slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= attestation_slot + T::slots_per_epoch());
 
-    let committee = get_beacon_committee(state, data.slot, data.index).unwrap();
+    let committee = get_beacon_committee(state, attestation_slot, index).unwrap();
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
     assert_eq!(attestation.custody_bits.len(), committee.count()); // Count suranda ilgį, bet nebelieka iteratoriaus. Might wanna look into that
 
     let pending_attestation = PendingAttestation {
         data: attestation.data.clone(),
         aggregation_bits: attestation.aggregation_bits,
-        inclusion_delay: (state.slot - attestation_slot).as_u64(),
+        inclusion_delay: (state.slot - attestation_slot) as u64,
         proposer_index: get_beacon_proposer_index(state).unwrap(),
     };
 
