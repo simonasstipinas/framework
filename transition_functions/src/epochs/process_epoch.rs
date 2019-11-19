@@ -5,6 +5,8 @@ use helper_functions::{
     misc::compute_activation_exit_epoch,
     predicates::is_active_validator,
 };
+use ssz_types::VariableList;
+use types::types::Eth1Data;
 use itertools::{Either, Itertools};
 use types::consts::*;
 use types::primitives::*;
@@ -98,7 +100,7 @@ fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
     let next_epoch = current_epoch+1 as Epoch;
     //# Reset eth1 data votes
     if (state.slot + 1) % (SLOTS_PER_ETH1_VOTING_PERIOD as u64) == 0{
-        state.eth1_data_votes: ssz_types::VariableList<types::types::Eth1Data, T::SlotsPerEth1VotingPeriod> = ssz_types::VariableList::from(vec![]);
+        state.eth1_data_votes: VariableList<Eth1Data, T::SlotsPerEth1VotingPeriod> = VariableList::from(vec![]);
     }
     //# Update effective balances with hysteresis
     for index, validator in enumerate(state.validators){
