@@ -13,6 +13,9 @@ pub trait ExpConst {
     fn slots_per_epoch() -> u64 {
         32
     }
+    fn slots_per_historical_root() -> u64 {
+        8192
+    }
 }
 
 impl ExpConst for MainnetConfig {}
