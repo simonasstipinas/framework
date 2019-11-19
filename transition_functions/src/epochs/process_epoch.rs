@@ -1,12 +1,12 @@
 use core::consts::ExpConst;
 use helper_functions::{
-    beacon_state_accessors::{get_current_epoch, get_validator_churn_limit, get_total_active_balance},
+    beacon_state_accessors::{get_current_epoch, get_validator_churn_limit, get_total_active_balance, get_randao_mix},
     beacon_state_mutators::initiate_validator_exit,
     misc::compute_activation_exit_epoch,
     predicates::is_active_validator,
 };
 use ssz_types::VariableList;
-use types::types::Eth1Data;
+use types::types::{Eth1Data, HistoricalBatch};
 use itertools::{Either, Itertools};
 use types::consts::*;
 use types::primitives::*;
@@ -16,7 +16,6 @@ use types::{
     beacon_state::*,
     config::{Config, MainnetConfig},
     types::Validator,
-    HistoricalBatch,
 };
 
 fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
@@ -115,16 +114,18 @@ fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
     //# Reset slashings
     state.slashings[(next_epoch % T::epochs_per_slashings_vector()) as usize] = 0 as Gwei;
     //# Set randao mix
-    state.randao_mixes[(next_epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize] = get_randao_mix(state, current_epoch);
+    state.randao_mixes[(next_epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize] = get_randao_mix(&state, current_epoch).unwrap();
     //# Set historical root accumulator
     if next_epoch % (T::slots_per_historical_root() / T::slots_per_epoch()) == 0{
-        let historical_batch = HistoricalBatch(state.block_roots, state.state_roots);
+        let historical_batch = HistoricalBatch {
+            block_roots: state.block_roots, 
+            state_roots: state.state_roots,
+        };
         state.historical_roots.push(hash_tree_root(historical_batch));
     }
-
     //# Rotate current/previous epoch attestations
     state.previous_epoch_attestations = state.current_epoch_attestations;
-    state.current_epoch_attestations = [];
+    state.current_epoch_attestations: VariableList<types::types::PendingAttestation<T>, T::MaxAttestationsPerEpoch> = VariableList::from(vec![]);
 }
 
 #[cfg(test)]
