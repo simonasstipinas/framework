@@ -13,18 +13,18 @@ use std::convert::TryInto;
 fn process_voluntary_exit<T: Config>(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index as usize];
     // Verify the validator is active
-    //!assert! (is_active_validator(validator, get_current_epoch(state)))
+    assert!(is_active_validator(&validator, get_current_epoch(state)));
     // Verify the validator has not yet exited
-    assert! validator.exit_epoch == FAR_FUTURE_EPOCH
+    assert!(validator.exit_epoch == T::far_future_epoch());
     // Exits must specify an epoch when they become valid; they are not valid before then
-    //!assert! (get_current_epoch(state) >= exit.epoch)
+    assert!(get_current_epoch(state) >= exit.epoch);
     // Verify the validator has been active long enough
-    //!assert! (get_current_epoch(state) >= validator.activation_epoch + PERSISTENT_COMMITTEE_PERIOD)
+    assert!(get_current_epoch(state) >= validator.activation_epoch + T::persistent_committee_period());
     // Verify signature
-    //!domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, exit.epoch)
-    //!assert! (bls_verify(validator.pubkey, signing_root(exit), exit.signature, domain))
+    let domain = get_domain(state, T::domain_voluntary_exit() as u32, Some(exit.epoch));
+    assert!(bls_verify(&validator.pubkey.try_into().unwrap(), signing_root(exit), &exit.signature.try_into().unwrap(), domain).unwrap());
     // Initiate exit
-    //!initiate_validator_exit(state, exit.validator_index)
+    initiate_validator_exit(state, exit.validator_index);
 }
 
 fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) { 
@@ -47,7 +47,7 @@ fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) {
         // bls::PublicKeyBytes::from_bytes(&v.pubkey.as_bytes()).unwrap()
         if  v.pubkey.try_into().unwrap() == pubkey {
             //# Increase balance by deposit amount
-            index = ValidatorIndex(index);
+            // index = ValidatorIndex(index);
             increase_balance(state, index as u64, amount);
             return;
         }
@@ -62,7 +62,7 @@ fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) {
     }
     
     //# Add validator and balance entries
-// bls::PublicKey::from_bytes(&pubkey.as_bytes()).unwrap()
+    // bls::PublicKey::from_bytes(&pubkey.as_bytes()).unwrap()
     state.validators.push(Validator{
         pubkey: (&pubkey).try_into().unwrap(),
         withdrawal_credentials: deposit.data.withdrawal_credentials,
@@ -82,7 +82,6 @@ fn process_block_header<T: Config>(state: BeaconState<T>, block: BeaconBlock<T>)
     //# Verify that the parent matches
     assert! (block.parent_root == signing_root(state.latest_block_header));
     //# Save current block as the new latest block
-    //? check if its ok in rust
     state.latest_block_header = BeaconBlockHeader{
         slot: block.slot,
         parent_root: block.parent_root,
@@ -105,8 +104,11 @@ fn process_randao<T: Config>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
     let proposer = state.validators[get_beacon_proposer_index(&state).unwrap() as usize];
     assert! (bls_verify(&(proposer.pubkey).try_into().unwrap(), hash_tree_root(epoch), &body.randao_reveal.try_into().unwrap(), get_domain(&state, T::domain_randao() as u32, None)).unwrap());
     //# Mix in RANDAO reveal
-    let mix = xor(get_randao_mix(&state, epoch).unwrap().as_bytes(), &hash(&body.randao_reveal.as_bytes()));
-    state.randao_mixes[epoch % T::EpochsPerHistoricalVector] = mix;
+    let mix = xor(get_randao_mix(&state, epoch).unwrap().as_bytes(), &hash(&body.randao_reveal.as_bytes())).unwrap();
+    let mut array = [0; 32];
+    let mix = &mix[..array.len()]; // panics if not enough data
+    array.copy_from_slice(mix);
+    state.randao_mixes[(epoch % T::epochs_per_historical_vector()) as usize] = array.try_into().unwrap();
 }
 
 fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_slashing: ProposerSlashing){
@@ -121,7 +123,7 @@ fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_sla
     let headers: [BeaconBlockHeader; 2] = [proposer_slashing.header_1, proposer_slashing.header_2];
     for header in &headers {
         let domain = get_domain(state, T::domain_beacon_proposer() as u32, Some(compute_epoch_at_slot(header.slot)));
-        //# Sekanti eilutė tai fucking amazing. signed_root helperiuose užkomentuota
+        //# Sekanti eilutė tai ******* amazing. signed_root helperiuose užkomentuota
         assert!(bls_verify(&proposer.pubkey.try_into().unwrap(), signing_root(header), &header.signature.try_into().unwrap(), domain).unwrap()); 
     }
 
@@ -166,18 +168,19 @@ fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_sla
 
 fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attestation<T>){
     let data = attestation.data;
-    assert!(data.index < get_committee_count_at_slot(state, data.slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
-    assert!(data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)));
-    assert!(data.slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= data.slot + T::SlotsPerEpoch);
+    let attestation_slot = state.get_attestation_data_slot(&attestation.data)
+    assert!(data.index < get_committee_count_at_slot(state, attestation_slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
+    assert!(data.target.epoch == get_previous_epoch(state) || data.target.epoch == get_current_epoch(state));
+    assert!(attestation_slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= attestation_slot + T::SlotsPerEpoch);
 
     let committee = get_beacon_committee(state, data.slot, data.index).unwrap();
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
     assert_eq!(attestation.custody_bits.len(), committee.count()); // Count suranda ilgį, bet nebelieka iteratoriaus. Might wanna look into that
 
-    let pending_attestation = PendingAttestation{
-        data: data,
+    let pending_attestation = PendingAttestation {
+        data: attestation.data.clone(),
         aggregation_bits: attestation.aggregation_bits,
-        inclusion_delay: state.slot - data.slot,
+        inclusion_delay: (state.slot - attestation_slot).as_u64(),
         proposer_index: get_beacon_proposer_index(state).unwrap(),
     };
 
@@ -197,7 +200,13 @@ fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attes
 
 fn process_eth1_data<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBody<T>){
     state.eth1_data_votes.push(body.eth1_data);
-    if state.eth1_data_votes.count(body.eth1_data) * 2 > SLOTS_PER_ETH1_VOTING_PERIOD{
+    let num_votes = state
+        .eth1_data_votes
+        .iter()
+        .filter(|vote| *vote == &body.eth1_data)
+        .count();
+
+    if num_votes * 2 > SLOTS_PER_ETH1_VOTING_PERIOD{
         state.eth1_data = body.eth1_data;
     }
 }
@@ -206,19 +215,21 @@ fn process_operations<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBo
     //# Verify that outstanding deposits are processed up to the maximum number of deposits
     assert_eq!(body.deposits.len(), std::cmp::min(MAX_DEPOSITS, (state.eth1_data.deposit_count - state.eth1_deposit_index) as usize)); 
 
-    for (operations, function) in (
-        (body.proposer_slashings, process_proposer_slashing),
-        (body.attester_slashings, process_attester_slashing),
-        (body.attestations, process_attestation),
-        (body.deposits, process_deposit),
-        (body.voluntary_exits, process_voluntary_exit),
-        //# @process_shard_receipt_proofs
-    ){
-        for operation in operations{
-            function(state, operation);
-        }
+    for proposer_slashing in body.proposer_slashings.iter() {
+        process_proposer_slashing(&mut state, *proposer_slashing);
     }
-
+    for attester_slashing in body.attester_slashings.iter() {
+        process_attester_slashing(&mut state, *attester_slashing);
+    }
+    for attestation in body.attestations.iter() {
+        process_attestation(&mut state, *attestation);
+    }
+    for deposit in body.deposits.iter() {
+        process_deposit(&mut state, *deposit);
+    }
+    for voluntary_exit in body.voluntary_exits.iter() {
+        process_voluntary_exit(&mut state, *voluntary_exit);
+    }
 }
 
 #[cfg(test)]
