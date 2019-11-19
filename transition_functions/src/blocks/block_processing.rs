@@ -9,8 +9,9 @@ use types::types::*;
 use types::{ beacon_state::*, config::{ Config, MainnetConfig }};
 use std::collections::BTreeSet;
 use std::convert::TryInto;
+use core::consts::ExpConst;
 
-fn process_voluntary_exit<T: Config>(state: &mut BeaconState<T>,exit: VoluntaryExit){
+fn process_voluntary_exit<T: Config + ExpConst>(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index as usize];
     // Verify the validator is active
     assert!(is_active_validator(&validator, get_current_epoch(state)));
@@ -27,7 +28,7 @@ fn process_voluntary_exit<T: Config>(state: &mut BeaconState<T>,exit: VoluntaryE
     initiate_validator_exit(state, exit.validator_index);
 }
 
-fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) { 
+fn process_deposit<T: Config + ExpConst>(state: &mut BeaconState<T>, deposit: Deposit) { 
     //# Verify the Merkle branch  is_valid_merkle_branch
 
     assert!(is_valid_merkle_branch(
@@ -76,7 +77,7 @@ fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) {
     &state.balances.push(amount);
 }
 
-fn process_block_header<T: Config>(state: BeaconState<T>, block: BeaconBlock<T>) {
+fn process_block_header<T: Config + ExpConst>(state: BeaconState<T>, block: BeaconBlock<T>) {
     //# Verify that the slots match
     assert! (block.slot == state.slot);
     //# Verify that the parent matches
@@ -98,7 +99,7 @@ fn process_block_header<T: Config>(state: BeaconState<T>, block: BeaconBlock<T>)
     assert! (bls_verify(&proposer.pubkey.try_into().unwrap(), signing_root(block), &block.signature.try_into().unwrap(), get_domain(&state, T::domain_beacon_proposer() as u32, None)).unwrap());
 }
 
-fn process_randao<T: Config>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
+fn process_randao<T: Config + ExpConst>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
     let epoch = get_current_epoch(&state);
     //# Verify RANDAO reveal
     let proposer = state.validators[get_beacon_proposer_index(&state).unwrap() as usize];
@@ -111,7 +112,7 @@ fn process_randao<T: Config>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
     state.randao_mixes[(epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize] = array.try_into().unwrap();
 }
 
-fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_slashing: ProposerSlashing){
+fn process_proposer_slashing<T: Config + ExpConst>(state: &mut BeaconState<T>, proposer_slashing: ProposerSlashing){
     let proposer = state.validators[proposer_slashing.proposer_index as usize];
     // Verify slots match
     assert_eq!(proposer_slashing.header_1.slot, proposer_slashing.header_2.slot);
@@ -130,7 +131,7 @@ fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_sla
     slash_validator(state, proposer_slashing.proposer_index);
 }
 
-fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_slashing: AttesterSlashing<T>){
+fn process_attester_slashing<T: Config + ExpConst>(state: &mut BeaconState<T>, attester_slashing: AttesterSlashing<T>){
     let attestation_1 = attester_slashing.attestation_1;
     let attestation_2 = attester_slashing.attestation_2;
     assert!(is_slashable_attestation_data(&attestation_1.data, &attestation_2.data));
@@ -166,7 +167,7 @@ fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_sla
     assert!(slashed_any);
 }
 
-fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attestation<T>){
+fn process_attestation<T: Config + ExpConst>(state: &mut BeaconState<T>, attestation: Attestation<T>){
     let data = attestation.data;
     let attestation_slot = state.get_attestation_data_slot(&attestation.data)
     assert!(data.index < get_committee_count_at_slot(state, attestation_slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
@@ -198,7 +199,7 @@ fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attes
 }
 
 
-fn process_eth1_data<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBody<T>){
+fn process_eth1_data<T: Config + ExpConst>(state: &mut BeaconState<T>, body: BeaconBlockBody<T>){
     state.eth1_data_votes.push(body.eth1_data);
     let num_votes = state
         .eth1_data_votes
@@ -211,7 +212,7 @@ fn process_eth1_data<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBod
     }
 }
 
-fn process_operations<T: Config>(state: &mut BeaconState<T>, body: BeaconBlockBody<T>){
+fn process_operations<T: Config + ExpConst>(state: &mut BeaconState<T>, body: BeaconBlockBody<T>){
     //# Verify that outstanding deposits are processed up to the maximum number of deposits
     assert_eq!(body.deposits.len(), std::cmp::min(MAX_DEPOSITS, (state.eth1_data.deposit_count - state.eth1_deposit_index) as usize)); 
 
