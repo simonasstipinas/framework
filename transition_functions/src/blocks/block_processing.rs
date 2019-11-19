@@ -47,7 +47,7 @@ fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) {
         // bls::PublicKeyBytes::from_bytes(&v.pubkey.as_bytes()).unwrap()
         if  v.pubkey.try_into().unwrap() == pubkey {
             //# Increase balance by deposit amount
-            index = ValidatorIndex(index);
+            // index = ValidatorIndex(index);
             increase_balance(state, index as u64, amount);
             return;
         }
@@ -169,7 +169,8 @@ fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_sla
 
 fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attestation<T>){
     let data = attestation.data;
-    //assert!(data.index < get_committee_count_at_slot(state, data.slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
+    let attestation_slot = state.get_attestation_data_slot(&attestation.data)
+    assert!(data.index < get_committee_count_at_slot(state, attestation_slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
     assert!(data.target.epoch == get_previous_epoch(state) || data.target.epoch == get_current_epoch(state));
     //assert!(data.slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= data.slot + T::SlotsPerEpoch);
 
@@ -177,8 +178,6 @@ fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attes
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
     assert_eq!(attestation.custody_bits.len(), committee.count()); // Count suranda ilgį, bet nebelieka iteratoriaus. Might wanna look into that
 
-    let attestation_slot = state.get_attestation_data_slot(&attestation.data);
-    //! - data.slot
     let pending_attestation = PendingAttestation {
         data: attestation.data.clone(),
         aggregation_bits: attestation.aggregation_bits,
