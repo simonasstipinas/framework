@@ -35,7 +35,7 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
         .enumerate()
         .filter(|(_, validator)| is_eligible(validator) || is_exiting_validator(validator))
         .partition_map(|(i, validator)| {
-            if (is_eligible(validator)) {
+            if is_eligible(validator) {
                 Either::Left(i)
             } else {
                 Either::Right(i)
@@ -69,7 +69,7 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
         compute_activation_exit_epoch::<T>(get_current_epoch(&state) as u64);
     for index in activation_queue.into_iter().take(churn_limit as usize) {
         let validator = &mut state.validators[index];
-        if (validator.activation_epoch == T::far_future_epoch()) {
+        if validator.activation_epoch == T::far_future_epoch() {
             validator.activation_epoch = delayed_activation_epoch;
         }
     }
@@ -98,7 +98,7 @@ fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
     let next_epoch = current_epoch+1 as Epoch;
     //# Reset eth1 data votes
     if (state.slot + 1) % (SLOTS_PER_ETH1_VOTING_PERIOD as u64) == 0{
-        state.eth1_data_votes = [];
+        state.eth1_data_votes: ssz_types::VariableList<types::types::Eth1Data, T::SlotsPerEth1VotingPeriod> = ssz_types::VariableList::from(vec![]);
     }
     //# Update effective balances with hysteresis
     for index, validator in enumerate(state.validators){
