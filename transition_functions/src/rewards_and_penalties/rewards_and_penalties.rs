@@ -11,20 +11,24 @@ use helper_functions::beacon_state_mutators::*;
 fn get_base_reward<T: Config + ExpConst>(state: BeaconState<T>, index: ValidatorIndex) -> Gwei{
     let total_balance = get_total_active_balance(&state).unwrap();
     let effective_balance = state.validators[index as usize].effective_balance;
-    return (effective_balance * T::base_reward_factor() / integer_squareroot(total_balance) / T::base_rewards_per_epoch()) as types::primitives::Gwei;
+    return (effective_balance * T::base_reward_factor() / integer_squareroot(total_balance) / T::base_rewards_per_epoch()) as Gwei;
 }
 
 
 
-fn get_attestation_deltas<T: Config + ExpConst>(state: BeaconState<T>) /*-> Tuple[Sequence[Gwei], Sequence[Gwei]]*/ {
+fn get_attestation_deltas<T: Config + ExpConst>(state: BeaconState<T>) -> (Vec<Gwei>, Vec<Gwei>) {
     //!let previous_epoch = get_previous_epoch(state);
     //!let total_balance = get_total_active_balance(state);
-    /*let rewards = [Gwei(0) for _ in range(len(state.validators))]
-    let penalties = [Gwei(0) for _ in range(len(state.validators))]
-    let eligible_validator_indices = [
-        ValidatorIndex(index) for index, v in enumerate(state.validators)
-        //!if is_active_validator(v, previous_epoch) or (v.slashed and previous_epoch + 1 < v.withdrawable_epoch)
-    ]*/
+    let rewards = Vec::new();
+    let penalties = Vec::new();
+    for i in 0..(state.validators.len()) {
+        rewards.push(0 as Gwei);
+        penalties.push(0 as Gwei);
+    }
+    // let eligible_validator_indices = [
+    //     ValidatorIndex(index) for index, v in enumerate(state.validators)
+    //     //!if is_active_validator(v, previous_epoch) or (v.slashed and previous_epoch + 1 < v.withdrawable_epoch)
+    // ];
  
     //# Micro-incentives for matching FFG source, FFG target, and head
     /*
@@ -74,7 +78,7 @@ fn get_attestation_deltas<T: Config + ExpConst>(state: BeaconState<T>) /*-> Tupl
     //!}
 
 
-    return rewards, penalties;
+    return (rewards, penalties);
 }
 
 fn process_rewards_and_penalties<T: Config + ExpConst>(state: BeaconState<T>) {
