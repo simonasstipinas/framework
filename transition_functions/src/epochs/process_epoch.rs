@@ -1,7 +1,7 @@
 use core::consts::ExpConst;
 use helper_functions::{
     beacon_state_accessors::{get_current_epoch, get_validator_churn_limit, get_total_active_balance, get_randao_mix},
-    beacon_state_mutators::initiate_validator_exit,
+    beacon_state_mutators::{initiate_validator_exit, decrease_balance},
     misc::compute_activation_exit_epoch,
     predicates::is_active_validator,
 };
@@ -15,7 +15,7 @@ use types::primitives::{ValidatorIndex, Gwei};
 use types::{
     beacon_state::*,
     config::{Config, MainnetConfig},
-    types::Validator,
+    types::{Validator, PendingAttestation},
 };
 
 fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
@@ -90,7 +90,7 @@ fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
             let slashings_sum = state.slashings.iter().sum::<u64>();
             let penalty_numerator = validator.effective_balance / increment * cmp::min(slashings_sum * 3, total_balance);
             let penalty = penalty_numerator / total_balance * increment;
-            helper_functions::beacon_state_mutators::decrease_balance(state, index as u64, penalty);
+            decrease_balance(state, index as u64, penalty);
         }
     }
 }
@@ -125,7 +125,7 @@ fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
     }
     //# Rotate current/previous epoch attestations
     state.previous_epoch_attestations = state.current_epoch_attestations;
-    state.current_epoch_attestations: VariableList<types::types::PendingAttestation<T>, T::MaxAttestationsPerEpoch> = VariableList::from(vec![]);
+    state.current_epoch_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> = VariableList::from(vec![]);
 }
 
 #[cfg(test)]
