@@ -294,7 +294,7 @@ mod tests {
         let roots: FixedVector<_, typenum::U64> = FixedVector::from(base.clone());
         state.block_roots = roots;
         let result = get_block_root::<MinimalConfig>(&state, 0);
-        assert_eq!(result.is_ok(), true);
+        assert_eq!(result.is_ok(), false);
     }
 
     #[test]
@@ -305,7 +305,7 @@ mod tests {
         let roots: FixedVector<_, typenum::U64> = FixedVector::from(base.clone());
         state.block_roots = roots;
         let result = get_block_root_at_slot::<MinimalConfig>(&state, 0);
-        assert_eq!(result.is_ok(), false); // ???
+        assert_eq!(result.is_ok(), false);
     }
 
     #[test]
