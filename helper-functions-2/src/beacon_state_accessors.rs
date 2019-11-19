@@ -60,3 +60,8 @@ pub fn get_total_active_balance<C: Config>(state: BeaconState<C>) -> Gwei {
     let validators = get_active_validator_indices(&state, 8); // get_current_epoch
     get_total_balance(state, validators)
 }
+
+/* mockup function */
+pub fn get_current_epoch<C: Config>(_state: &BeaconState<C>) -> Epoch {
+    0
+}
