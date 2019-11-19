@@ -108,7 +108,7 @@ fn process_randao<T: Config>(state: BeaconState<T>, body: BeaconBlockBody<T>) {
     let mut array = [0; 32];
     let mix = &mix[..array.len()]; // panics if not enough data
     array.copy_from_slice(mix);
-    state.randao_mixes[(epoch % T::epochs_per_historical_vector()) as usize] = array.try_into().unwrap();
+    state.randao_mixes[(epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize] = array.try_into().unwrap();
 }
 
 fn process_proposer_slashing<T: Config>(state: &mut BeaconState<T>, proposer_slashing: ProposerSlashing){

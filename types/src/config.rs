@@ -203,17 +203,11 @@ where
     fn domain_voluntary_exit() -> u64 {
         4
     }
-    fn epochs_per_historical_vector() -> u64 {
-        0x1_0000
-    }
     fn effective_balance_increment() -> u64 {
         1_000_000_000
     }
     fn ejection_balance() -> u64 {
         16_000_000_000
-    }
-    fn far_future_epoch() -> u64 {
-        0x1111_1111_1111_1111
     }
     fn base_rewards_per_epoch() -> u64 {
         4

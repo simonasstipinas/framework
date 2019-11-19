@@ -73,37 +73,36 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
     }
 }
 
-// fn process_slashings<T>(state: &mut BeaconState<T>) {
-//     // let epoch = get_current_epoch(state) //! missing helper function
-//     // let total_balance = get_total_active_balance(state) //!missing helper function
-//     let epoch = 1; // placeholder
-//     let total_balance:u64 = 1; // placeholder
-//     for (index, validator) in state.validators.iter().enumerate() {
-//         if validator.slashed && epoch + T::EpochsPerSlashingsVector / 2 == validator.withdrawable_epoch {
-//             let increment = T::effective_balance_increment();
-//             let slashings_sum = state.slashings.iter().sum::<u64>();
-//             let penalty_numerator = validator.effective_balance / increment * std::cmp::min(slashings_sum * 3, total_balance);
-//             let penalty = penalty_numerator / total_balance * increment;
-//             // decrease_balance(state, ValidatorIndex(index), penalty); //! missing helper function
-//         }
-//     }
-// }
+fn process_slashings<T: Config>(state: &mut BeaconState<T>) {
+    let epoch = get_current_epoch(state);
+    let total_balance = get_total_active_balance(state);
 
-// fn process_final_updates<T>(state: BeaconState<T>) {
-//     //!current_epoch = get_current_epoch(state);
-//     let next_epoch = Epoch(current_epoch + 1);
-//     //# Reset eth1 data votes
-//     if (state.slot + 1) % SLOTS_PER_ETH1_VOTING_PERIOD == 0{
-//         state.eth1_data_votes = [];
-//     }
-//     //# Update effective balances with hysteresis
-//     for index, validator in enumerate(state.validators){
-//         let balance = state.balances[index];
-//         HALF_INCREMENT = EFFECTIVE_BALANCE_INCREMENT / 2;
-//         if balance < validator.effective_balance or validator.effective_balance + 3 * HALF_INCREMENT < balance{
-//             validator.effective_balance = min(balance - balance % EFFECTIVE_BALANCE_INCREMENT, MAX_EFFECTIVE_BALANCE);
-//         }
-//     }
+    for (index, validator) in state.validators.iter().enumerate() {
+        if validator.slashed && epoch + T::epochs_per_slashings_vector() / 2 == validator.withdrawable_epoch {
+            let increment = T::effective_balance_increment();
+            let slashings_sum = state.slashings.iter().sum::<u64>();
+            let penalty_numerator = validator.effective_balance / increment * std::cmp::min(slashings_sum * 3, total_balance);
+            let penalty = penalty_numerator / total_balance * increment;
+            decrease_balance(state, index as u64, penalty);
+        }
+    }
+}
+
+fn process_final_updates<T: Config>(state: BeaconState<T>) {
+    current_epoch = get_current_epoch(state);
+    let next_epoch = Epoch(current_epoch + 1);
+    //# Reset eth1 data votes
+    if (state.slot + 1) % SLOTS_PER_ETH1_VOTING_PERIOD == 0{
+        state.eth1_data_votes = [];
+    }
+    //# Update effective balances with hysteresis
+    for index, validator in enumerate(state.validators){
+        let balance = state.balances[index];
+        HALF_INCREMENT = EFFECTIVE_BALANCE_INCREMENT / 2;
+        if balance < validator.effective_balance or validator.effective_balance + 3 * HALF_INCREMENT < balance{
+            validator.effective_balance = min(balance - balance % EFFECTIVE_BALANCE_INCREMENT, MAX_EFFECTIVE_BALANCE);
+        }
+    }
 
 //     //# Reset slashings
 //     state.slashings[next_epoch % EPOCHS_PER_SLASHINGS_VECTOR] = Gwei(0);
@@ -120,11 +119,13 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
 //     state.current_epoch_attestations = [];
 // }
 
-// #[cfg(test)]
-// mod process_epoch_tests {
-//     use types::{beacon_state::*, config::MainnetConfig};
-//     use super::*;
+#[cfg(test)]
+mod process_epoch_tests {
+    use types::{beacon_state::*, config::MainnetConfig};
+    use super::*;
 
-//     #[test]
-//     fn
-// }
+    #[test]
+    fn process_good_epoch() {
+        assert_eq!(2, 1);
+    }
+}
