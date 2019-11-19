@@ -4,7 +4,7 @@ use ethereum_types::H256;
 use std::cmp::max;
 use types::beacon_state::BeaconState;
 use types::config::Config;
-use types::primitives::{Epoch, Gwei, Slot, ValidatorIndex, Domain, DomainType};
+use types::primitives::{Domain, DomainType, Epoch, Gwei, Slot, ValidatorIndex};
 
 const SLOTS_PER_HISTORICAL_ROOT: u64 = 2 ^ 13;
 const EPOCHS_PER_HISTORICAL_VECTOR: u64 = 2 ^ 16;

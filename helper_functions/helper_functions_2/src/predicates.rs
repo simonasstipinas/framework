@@ -1,17 +1,17 @@
 use crate::error::Error;
+use crate::{beacon_state_accessors as accessors, crypto};
+use bls::AggregatePublicKey;
+use itertools::Itertools;
+use ssz_types::VariableList;
+use std::convert::TryFrom;
+use tree_hash::TreeHash;
+use typenum::Unsigned;
 use types::{
     beacon_state::BeaconState,
-    config::{Config},
+    config::Config,
     primitives::{Epoch, H256},
     types::{AttestationData, AttestationDataAndCustodyBit, IndexedAttestation, Validator},
 };
-use typenum::Unsigned;
-use itertools::Itertools;
-use crate::{crypto, beacon_state_accessors as accessors};
-use bls::{AggregatePublicKey, AggregateSignature, Signature};
-use tree_hash::TreeHash;
-use ssz_types::VariableList;
-use std::convert::{TryFrom};
 
 type ValidatorIndexList<C> = VariableList<u64, <C as Config>::MaxValidatorsPerCommittee>;
 
@@ -44,22 +44,20 @@ where
 fn has_common_elements<I>(data1: I, data2: I) -> bool
 where
     I: IntoIterator,
-    I::Item: Eq
+    I::Item: Eq,
 {
     let mut data2_iter = data2.into_iter();
-    data1.into_iter().any(|x| {
-        data2_iter.any(|y| x == y)
-
-    })
+    data1.into_iter().any(|x| data2_iter.any(|y| x == y))
 }
 
 fn aggregate_validator_public_keys<C: Config>(
     indices: &ValidatorIndexList<C>,
     state: &BeaconState<C>,
- ) -> Result<AggregatePublicKey, Error> {
+) -> Result<AggregatePublicKey, Error> {
     let mut aggr_pkey = AggregatePublicKey::new();
     for i in indices.iter() {
-        let ind = usize::try_from(*i).expect("Unable to convert ValidatorIndex to usize for indexing");
+        let ind =
+            usize::try_from(*i).expect("Unable to convert ValidatorIndex to usize for indexing");
         if state.validators.len() <= ind {
             return Err(Error::IndexOutOfRange);
         }
@@ -82,8 +80,8 @@ pub fn validate_indexed_attestation<C: Config>(
     let max_validators = C::MaxValidatorsPerCommittee::to_usize();
     if bit_0_indices.len() + bit_1_indices.len() > max_validators {
         return Err(Error::IndicesExceedMaxValidators);
-    } 
-    
+    }
+
     if has_common_elements(bit_0_indices, bit_1_indices) {
         return Err(Error::CustodyBitIndicesIntersect);
     }
@@ -95,22 +93,26 @@ pub fn validate_indexed_attestation<C: Config>(
     let aggr_pubkey1 = aggregate_validator_public_keys(bit_0_indices, state)?;
     let aggr_pubkey2 = aggregate_validator_public_keys(bit_1_indices, state)?;
 
-    let hash_1 = AttestationDataAndCustodyBit{
+    let hash_1 = AttestationDataAndCustodyBit {
         data: indexed_attestation.data.clone(),
         custody_bit: false,
-    }.tree_hash_root();
-    let hash_2 = AttestationDataAndCustodyBit{
+    }
+    .tree_hash_root();
+    let hash_2 = AttestationDataAndCustodyBit {
         data: indexed_attestation.data.clone(),
-        custody_bit: true
-    }.tree_hash_root();
-    match indexed_attestation.signature.verify_multiple(
+        custody_bit: true,
+    }
+    .tree_hash_root();
+
+    if indexed_attestation.signature.verify_multiple(
         &[&hash_1, &hash_2],
         //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
         accessors::get_domain(state, 0, Some(indexed_attestation.data.target.epoch)),
-        &[&aggr_pubkey1, &aggr_pubkey2]
+        &[&aggr_pubkey1, &aggr_pubkey2],
     ) {
-        true => Ok(()),
-        false => Err(Error::InvalidSignature),
+        Ok(())
+    } else {
+        Err(Error::InvalidSignature)
     }
 }
 
@@ -120,11 +122,10 @@ pub fn is_valid_merkle_branch(
     depth: u64,
     index: u64,
     root: &H256,
-) ->Result<bool, Error> {
-    let mut value_bytes = leaf.as_bytes().to_vec();    
+) -> Result<bool, Error> {
+    let mut value_bytes = leaf.as_bytes().to_vec();
     let depth_s = usize::try_from(depth).expect("Error converting to usize for indexing");
     let index_s = usize::try_from(index).expect("Error converting to usize for indexing");
-
 
     if branch.len() < depth_s {
         return Err(Error::IndexOutOfRange);
@@ -319,39 +320,26 @@ mod tests {
 
         let root = hash_concat(node_b0x, node_b1x);
 
-        assert!(is_valid_merkle_branch(
-            &leaf_b00, 
-            &[leaf_b01, node_b1x], 
-            2, 
-            0, 
-            &root)
-        .unwrap());
+        assert!(
+            is_valid_merkle_branch(&leaf_b00, &[leaf_b01, node_b1x], 2, 0, &root)
+                .expect("Unexpected error")
+        );
 
-        assert!(is_valid_merkle_branch(
-            &leaf_b01, 
-            &[leaf_b00, node_b1x], 
-            2, 
-            1, 
-            &root)
-        .unwrap());
+        assert!(
+            is_valid_merkle_branch(&leaf_b01, &[leaf_b00, node_b1x], 2, 1, &root)
+                .expect("Unexpected error")
+        );
 
-        assert!(is_valid_merkle_branch(
-            &leaf_b10, 
-            &[leaf_b11, node_b0x], 
-            2, 
-            2, 
-            &root)
-        .unwrap());
+        assert!(
+            is_valid_merkle_branch(&leaf_b10, &[leaf_b11, node_b0x], 2, 2, &root)
+                .expect("Unexpected error")
+        );
 
-        assert!(is_valid_merkle_branch(
-            &leaf_b11, 
-            &[leaf_b10, node_b0x], 
-            2, 
-            3, 
-            &root)
-        .unwrap());
+        assert!(
+            is_valid_merkle_branch(&leaf_b11, &[leaf_b10, node_b0x], 2, 3, &root)
+                .expect("Unexpected error")
+        );
     }
-
 
     #[test]
     fn test_merkle_branch_depth() {
@@ -365,21 +353,13 @@ mod tests {
 
         let root = hash_concat(node_b0x, node_b1x);
 
-        assert!(is_valid_merkle_branch(
-            &leaf_b00, 
-            &[leaf_b01], 
-            1, 
-            0, 
-            &node_b0x)
-        .unwrap());
+        assert!(
+            is_valid_merkle_branch(&leaf_b00, &[leaf_b01], 1, 0, &node_b0x)
+                .expect("Unexpected error")
+        );
 
         assert_eq!(
-            is_valid_merkle_branch(
-                &leaf_b00, 
-                &[leaf_b01], 
-                3, 
-                0, 
-                &root), 
+            is_valid_merkle_branch(&leaf_b00, &[leaf_b01], 3, 0, &root),
             Err(Error::IndexOutOfRange)
         );
     }
@@ -397,28 +377,31 @@ mod tests {
         let root = hash_concat(node_b0x, node_b1x);
 
         assert!(!is_valid_merkle_branch(
-            &leaf_b00, 
-            &[leaf_b01, node_b0x], // should be node_b1x 
-            2, 
-            0, 
-            &root)
-        .unwrap());
+            &leaf_b00,
+            &[leaf_b01, node_b0x], // should be node_b1x
+            2,
+            0,
+            &root
+        )
+        .expect("Unexpected error"));
 
         assert!(!is_valid_merkle_branch(
-            &leaf_b11, 
+            &leaf_b11,
             &[leaf_b10, node_b0x],
-            2, 
-            3, 
-            &H256::from([0xFF; 32])) // Wrong root
-        .unwrap());
+            2,
+            3,
+            &H256::from([0xFF; 32])
+        ) // Wrong root
+        .expect("Unexpected error"));
 
         assert!(!is_valid_merkle_branch(
-            &leaf_b11, 
+            &leaf_b11,
             &[leaf_b10, node_b0x],
-            2, 
-            0, // Wrong index 
-            &root)
-        .unwrap());
+            2,
+            0, // Wrong index
+            &root
+        )
+        .expect("Unexpected error"));
     }
 
     mod validate_indexed_attestation_tests {
@@ -428,10 +411,11 @@ mod tests {
         #[test]
         fn custody_bit1_set() {
             let state: BeaconState<MainnetConfig> = BeaconState::default();
-            let mut attestation: IndexedAttestation<MainnetConfig> =
-                IndexedAttestation::default();
-            attestation.custody_bit_1_indices.push(1).expect(
-                "Unable to add custody bit index");
+            let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
+            attestation
+                .custody_bit_1_indices
+                .push(1)
+                .expect("Unable to add custody bit index");
 
             assert_eq!(
                 validate_indexed_attestation(&state, &attestation),
@@ -442,14 +426,19 @@ mod tests {
         #[test]
         fn index_set_not_sorted() {
             let state: BeaconState<MainnetConfig> = BeaconState::default();
-            let mut attestation: IndexedAttestation<MainnetConfig> =
-                IndexedAttestation::default();
-            attestation.custody_bit_0_indices.push(2).expect(
-                "Unable to add custody bit index");
-            attestation.custody_bit_0_indices.push(1).expect(
-                "Unable to add custody bit index");
-            attestation.custody_bit_0_indices.push(3).expect(
-                "Unable to add custody bit index");
+            let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
+            attestation
+                .custody_bit_0_indices
+                .push(2)
+                .expect("Unable to add custody bit index");
+            attestation
+                .custody_bit_0_indices
+                .push(1)
+                .expect("Unable to add custody bit index");
+            attestation
+                .custody_bit_0_indices
+                .push(3)
+                .expect("Unable to add custody bit index");
 
             assert_eq!(
                 validate_indexed_attestation(&state, &attestation),
@@ -457,14 +446,14 @@ mod tests {
             );
         }
 
-
         #[test]
         fn non_existent_validators() {
             let state: BeaconState<MainnetConfig> = BeaconState::default();
-            let mut attestation: IndexedAttestation<MainnetConfig> =
-                IndexedAttestation::default();
-            attestation.custody_bit_0_indices.push(0).expect(
-                "Unable to add custody bit index");
+            let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
+            attestation
+                .custody_bit_0_indices
+                .push(0)
+                .expect("Unable to add custody bit index");
 
             assert_eq!(
                 validate_indexed_attestation(&state, &attestation),
@@ -475,19 +464,33 @@ mod tests {
         #[test]
         fn invalid_signature() {
             let mut state: BeaconState<MainnetConfig> = BeaconState::default();
-            let mut attestation: IndexedAttestation<MainnetConfig> =
-                IndexedAttestation::default();
-            attestation.custody_bit_0_indices.push(0).expect(
-                "Unable to add custody bit index");
-            attestation.custody_bit_0_indices.push(1).expect(
-                "Unable to add custody bit index");
-            attestation.custody_bit_0_indices.push(2).expect(
-                "Unable to add custody bit index");
+            let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
+            attestation
+                .custody_bit_0_indices
+                .push(0)
+                .expect("Unable to add custody bit index");
+            attestation
+                .custody_bit_0_indices
+                .push(1)
+                .expect("Unable to add custody bit index");
+            attestation
+                .custody_bit_0_indices
+                .push(2)
+                .expect("Unable to add custody bit index");
 
             // default_validator() generates randome public key
-            state.validators.push(default_validator());
-            state.validators.push(default_validator());
-            state.validators.push(default_validator());
+            state
+                .validators
+                .push(default_validator())
+                .expect("Expected successfull push to validator collection");
+            state
+                .validators
+                .push(default_validator())
+                .expect("Expected successfull push to validator collection");
+            state
+                .validators
+                .push(default_validator())
+                .expect("Expected successfull push to validator collection");
 
             assert_eq!(
                 validate_indexed_attestation(&state, &attestation),

@@ -19,7 +19,18 @@ pub struct Attestation<C: Config> {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Hash, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Hash,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct AttestationData {
     pub beacon_block_root: H256,
@@ -87,7 +98,17 @@ pub struct BeaconBlockBody<C: Config> {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct BeaconBlockHeader {
     pub slot: Slot,
@@ -141,7 +162,17 @@ pub struct Eth1Data {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct Fork {
     pub previous_version: Version,
@@ -155,7 +186,9 @@ pub struct HistoricalBatch<C: Config> {
     pub state_roots: FixedVector<H256, C::SlotsPerHistoricalRoot>,
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default)]
+#[derive(
+    Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+)]
 pub struct IndexedAttestation<C: Config> {
     pub custody_bit_0_indices: VariableList<u64, C::MaxValidatorsPerCommittee>,
     pub custody_bit_1_indices: VariableList<u64, C::MaxValidatorsPerCommittee>,

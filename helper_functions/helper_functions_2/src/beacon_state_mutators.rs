@@ -80,31 +80,31 @@ pub fn slash_validator<C: Config>(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use types::types::Validator;
-    use types::primitives::H256;
-    use bls::{PublicKey, SecretKey};
-    use types::config::MainnetConfig;
+    // use super::*;
+    // use bls::{PublicKey, SecretKey};
+    // use types::config::MainnetConfig;
+    // use types::primitives::H256;
+    // use types::types::Validator;
 
     //fn mock_beaconstate() -> BeaconState {}
 
-    const EPOCH_MAX: u64 = u64::max_value();
+    // const EPOCH_MAX: u64 = u64::max_value();
 
-    fn default_validator() -> Validator {
-        Validator {
-            effective_balance: 0,
-            slashed: false,
-            activation_eligibility_epoch: EPOCH_MAX,
-            activation_epoch: EPOCH_MAX,
-            exit_epoch: EPOCH_MAX,
-            withdrawable_epoch: EPOCH_MAX,
-            withdrawal_credentials: H256([0; 32]),
-            pubkey: PublicKey::from_secret_key(&SecretKey::random()),
-        }
-    }
+    // fn default_validator() -> Validator {
+    //     Validator {
+    //         effective_balance: 0,
+    //         slashed: false,
+    //         activation_eligibility_epoch: EPOCH_MAX,
+    //         activation_epoch: EPOCH_MAX,
+    //         exit_epoch: EPOCH_MAX,
+    //         withdrawable_epoch: EPOCH_MAX,
+    //         withdrawal_credentials: H256([0; 32]),
+    //         pubkey: PublicKey::from_secret_key(&SecretKey::random()),
+    //     }
+    // }
 
     mod slash_validator_tests {
-        use super::*;
+        //use super::*;
 
         // #[test]
         // fn test_exit_epoch() {
