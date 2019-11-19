@@ -110,20 +110,18 @@ fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
             validator.effective_balance = cmp::min(balance - balance % T::effective_balance_increment() , T::max_effective_balance());
         }
     }
-
-     //# Reset slashings
-     state.slashings[next_epoch % EPOCHS_PER_SLASHINGS_VECTOR] = Gwei(0);
-     //# Set randao mix
-     state.randao_mixes[next_epoch % EPOCHS_PER_HISTORICAL_VECTOR] = get_randao_mix(state, current_epoch);
-     //# Set historical root accumulator
-     if next_epoch % (SLOTS_PER_HISTORICAL_ROOT / SLOTS_PER_EPOCH) == 0{
-         historical_batch = HistoricalBatch(block_roots=state.block_roots, state_roots=state.state_roots);
-         state.historical_roots.append(hash_tree_root(historical_batch));
-     }
-
-     //# Rotate current/previous epoch attestations
-     state.previous_epoch_attestations = state.current_epoch_attestations;
-     state.current_epoch_attestations = [];
+    //# Reset slashings
+    state.slashings[next_epoch % EPOCHS_PER_SLASHINGS_VECTOR] = Gwei(0);
+    //# Set randao mix
+    state.randao_mixes[next_epoch % EPOCHS_PER_HISTORICAL_VECTOR] = get_randao_mix(state, current_epoch);
+    //# Set historical root accumulator
+    if next_epoch % (SLOTS_PER_HISTORICAL_ROOT / SLOTS_PER_EPOCH) == 0{
+        historical_batch = HistoricalBatch(block_roots=state.block_roots, state_roots=state.state_roots);
+        state.historical_roots.append(hash_tree_root(historical_batch));
+    }
+    //# Rotate current/previous epoch attestations
+    state.previous_epoch_attestations = state.current_epoch_attestations;
+    state.current_epoch_attestations: VariableList<types::types::PendingAttestation<T>, T::MaxAttestationsPerEpoch> = VariableList::from(vec![]);
 }
 
 #[cfg(test)]
