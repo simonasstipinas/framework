@@ -95,9 +95,6 @@ fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
 
 fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
     let current_epoch = get_current_epoch(&state);
-    let next_epoch = Epoch(current_epoch + 1);
-fn process_final_updates<T: Config>(state: BeaconState<T>) {
-    let current_epoch = get_current_epoch(&state);
     let next_epoch = current_epoch+1 as Epoch;
     //# Reset eth1 data votes
     if (state.slot + 1) % (SLOTS_PER_ETH1_VOTING_PERIOD as u64) == 0{
