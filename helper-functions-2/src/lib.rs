@@ -4,3 +4,4 @@ pub mod crypto;
 pub mod math;
 pub mod misc;
 pub mod predicates;
+pub mod error;

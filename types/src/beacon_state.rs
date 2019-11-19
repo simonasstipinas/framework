@@ -2,10 +2,11 @@ use serde::{Deserialize, Serialize};
 use ssz_derive::{Decode, Encode};
 use ssz_types::{BitVector, FixedVector, VariableList};
 use tree_hash_derive::TreeHash;
+use bls::Signature;
 
 use crate::{config::*, consts, primitives::*, types::*};
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Encode, Decode, TreeHash)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Encode, Decode, TreeHash, Default)]
 pub struct BeaconState<C: Config> {
     pub genesis_time: u64,
     pub slot: Slot,

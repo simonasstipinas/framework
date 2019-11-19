@@ -53,6 +53,8 @@ mod tests {
 
     const fn default_attestation_data() -> AttestationData {
         AttestationData {
+            slot: 0,
+            index: 0,
             beacon_block_root: H256([0; 32]),
             source: Checkpoint {
                 epoch: 0,

@@ -8,3 +8,5 @@ pub type Slot = u64;
 pub type ValidatorIndex = u64;
 pub type ValidatorId = PublicKey;
 pub type Version = [u8; 4];
+pub type DomainType = u32;
+pub type Domain = u64;

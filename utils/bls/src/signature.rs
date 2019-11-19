@@ -176,3 +176,17 @@ mod tests {
         }
     }
 }
+
+impl Default for Signature {
+    fn default () -> Self {
+        Signature::empty_signature()
+        // Signature {
+        //     // signature: Signature::from_bytes(&[]).unwrap(),
+        //     signature: milagro_bls::Signature::empty_signature(),
+        //     is_empty: true,
+
+
+        // }
+    }
+}
+
