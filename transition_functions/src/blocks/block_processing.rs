@@ -62,7 +62,7 @@ fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: Deposit) {
     }
     
     //# Add validator and balance entries
-// bls::PublicKey::from_bytes(&pubkey.as_bytes()).unwrap()
+    // bls::PublicKey::from_bytes(&pubkey.as_bytes()).unwrap()
     state.validators.push(Validator{
         pubkey: (&pubkey).try_into().unwrap(),
         withdrawal_credentials: deposit.data.withdrawal_credentials,
@@ -82,7 +82,6 @@ fn process_block_header<T: Config>(state: BeaconState<T>, block: BeaconBlock<T>)
     //# Verify that the parent matches
     assert! (block.parent_root == signing_root(state.latest_block_header));
     //# Save current block as the new latest block
-    //? check if its ok in rust
     state.latest_block_header = BeaconBlockHeader{
         slot: block.slot,
         parent_root: block.parent_root,
@@ -172,7 +171,7 @@ fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attes
     let attestation_slot = state.get_attestation_data_slot(&attestation.data)
     assert!(data.index < get_committee_count_at_slot(state, attestation_slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
     assert!(data.target.epoch == get_previous_epoch(state) || data.target.epoch == get_current_epoch(state));
-    //assert!(data.slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= data.slot + T::SlotsPerEpoch);
+    assert!(attestation_slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= attestation_slot + T::SlotsPerEpoch);
 
     let committee = get_beacon_committee(state, data.slot, data.index).unwrap();
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
