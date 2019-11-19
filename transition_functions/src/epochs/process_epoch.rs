@@ -88,7 +88,7 @@ fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
         if validator.slashed && epoch + T::epochs_per_slashings_vector() / 2 == validator.withdrawable_epoch {
             let increment = T::effective_balance_increment();
             let slashings_sum = state.slashings.iter().sum::<u64>();
-            let penalty_numerator = validator.effective_balance / increment * std::cmp::min(slashings_sum * 3, total_balance);
+            let penalty_numerator = validator.effective_balance / increment * cmp::min(slashings_sum * 3, total_balance);
             let penalty = penalty_numerator / total_balance * increment;
             helper_functions::beacon_state_mutators::decrease_balance(state, index as u64, penalty);
         }
@@ -103,11 +103,11 @@ fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
         state.eth1_data_votes: VariableList<Eth1Data, T::SlotsPerEth1VotingPeriod> = VariableList::from(vec![]);
     }
     //# Update effective balances with hysteresis
-    for index, validator in enumerate(state.validators){
+    for (index, validator) in state.validators.iter().enumerate() {
         let balance = state.balances[index];
-        HALF_INCREMENT = EFFECTIVE_BALANCE_INCREMENT / 2;
-        if balance < validator.effective_balance or validator.effective_balance + 3 * HALF_INCREMENT < balance{
-            validator.effective_balance = min(balance - balance % EFFECTIVE_BALANCE_INCREMENT, MAX_EFFECTIVE_BALANCE);
+        let HALF_INCREMENT = T::effective_balance_increment() / 2;
+        if balance < validator.effective_balance || validator.effective_balance + 3 * HALF_INCREMENT < balance {
+            validator.effective_balance = cmp::min(balance - balance % T::effective_balance_increment() , T::max_effective_balance());
         }
     }
 
