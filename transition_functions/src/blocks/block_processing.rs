@@ -170,17 +170,19 @@ fn process_attester_slashing<T: Config>(state: &mut BeaconState<T>, attester_sla
 fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: Attestation<T>){
     let data = attestation.data;
     //assert!(data.index < get_committee_count_at_slot(state, data.slot)); //# Nėra index ir slot. ¯\_(ツ)_/¯
-    assert!(data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)));
+    assert!(data.target.epoch == get_previous_epoch(state) || data.target.epoch == get_current_epoch(state));
     //assert!(data.slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= data.slot + T::SlotsPerEpoch);
 
     let committee = get_beacon_committee(state, data.slot, data.index).unwrap();
     assert_eq!(attestation.aggregation_bits.len(), attestation.custody_bits.len());
     assert_eq!(attestation.custody_bits.len(), committee.count()); // Count suranda ilgį, bet nebelieka iteratoriaus. Might wanna look into that
 
-    let pending_attestation = PendingAttestation{
-        data: data,
+    let attestation_slot = state.get_attestation_data_slot(&attestation.data);
+    //! - data.slot
+    let pending_attestation = PendingAttestation {
+        data: attestation.data.clone(),
         aggregation_bits: attestation.aggregation_bits,
-        inclusion_delay: state.slot,//! - data.slot,
+        inclusion_delay: (state.slot - attestation_slot).as_u64(),
         proposer_index: get_beacon_proposer_index(state).unwrap(),
     };
 
