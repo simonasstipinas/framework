@@ -209,9 +209,6 @@ where
     fn ejection_balance() -> u64 {
         16_000_000_000
     }
-    fn base_rewards_per_epoch() -> u64 {
-        4
-    }
     fn genesis_epoch() -> u64 {
         0
     }
