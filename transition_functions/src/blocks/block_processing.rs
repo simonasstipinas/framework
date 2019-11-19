@@ -48,7 +48,6 @@ fn process_deposit<T: Config + ExpConst>(state: &mut BeaconState<T>, deposit: De
         // bls::PublicKeyBytes::from_bytes(&v.pubkey.as_bytes()).unwrap()
         if  v.pubkey.try_into().unwrap() == pubkey {
             //# Increase balance by deposit amount
-            // index = ValidatorIndex(index);
             increase_balance(state, index as u64, amount);
             return;
         }
