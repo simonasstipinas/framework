@@ -78,7 +78,7 @@ pub struct AttesterSlashing<C: Config> {
 }
 
 #[derive(
-    Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+    Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
 )]
 pub struct BeaconBlock<C: Config> {
     pub slot: Slot,
@@ -89,8 +89,21 @@ pub struct BeaconBlock<C: Config> {
     pub signature: Signature,
 }
 
+impl<C: Config> Default for BeaconBlock<C> {
+    fn default() -> Self {
+        #[allow(clippy::default_trait_access)]
+        Self {
+            slot: Default::default(),
+            parent_root: Default::default(),
+            state_root: Default::default(),
+            body: Default::default(),
+            signature: Signature::empty_signature(),
+        }
+    }
+}
+
 #[derive(
-    Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+    Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
 )]
 pub struct BeaconBlockBody<C: Config> {
     pub randao_reveal: Signature,
@@ -104,6 +117,23 @@ pub struct BeaconBlockBody<C: Config> {
     pub transfers: VariableList<Transfer, C::MaxTransfers>,
 }
 
+impl<C: Config> Default for BeaconBlockBody<C> {
+    fn default() -> Self {
+        #[allow(clippy::default_trait_access)]
+        Self {
+            randao_reveal: Signature::empty_signature(),
+            eth1_data: Default::default(),
+            graffiti: Default::default(),
+            proposer_slashings: Default::default(),
+            attester_slashings: Default::default(),
+            attestations: Default::default(),
+            deposits: Default::default(),
+            voluntary_exits: Default::default(),
+            transfers: Default::default(),
+        }
+    }
+}
+
 #[derive(
     Clone,
     PartialEq,
@@ -115,7 +145,6 @@ pub struct BeaconBlockBody<C: Config> {
     Decode,
     TreeHash,
     SignedRoot,
-    Default,
 )]
 pub struct BeaconBlockHeader {
     pub slot: Slot,
@@ -123,6 +152,19 @@ pub struct BeaconBlockHeader {
     pub state_root: H256,
     pub body_root: H256,
     pub signature: Signature,
+}
+
+impl Default for BeaconBlockHeader {
+    fn default() -> Self {
+        #[allow(clippy::default_trait_access)]
+        Self {
+            slot: Default::default(),
+            parent_root: Default::default(),
+            state_root: Default::default(),
+            body_root: Default::default(),
+            signature: Signature::empty_signature(),
+        }
+    }
 }
 
 impl BeaconBlockHeader {
