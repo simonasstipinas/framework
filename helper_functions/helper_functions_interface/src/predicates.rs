@@ -1,7 +1,7 @@
-use crate::error::Error;
 use types::{
     beacon_state::BeaconState,
     config::Config,
+    helper_functions_types::Error,
     primitives::{Epoch, H256},
     types::{AttestationData, IndexedAttestation, Validator},
 };

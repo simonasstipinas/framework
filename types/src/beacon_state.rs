@@ -1,4 +1,6 @@
-use crate::{config::*, consts, primitives::*, types::*};
+use crate::{
+    config::*, consts, helper_functions_types::Error as HelperError, primitives::*, types::*,
+};
 use ethereum_types::H256 as Hash256;
 use serde::{Deserialize, Serialize};
 use ssz_derive::{Decode, Encode};
@@ -37,12 +39,18 @@ pub enum Error {
     //RelativeEpochError(RelativeEpochError),
     //CommitteeCacheUninitialized(RelativeEpoch),
     SszTypesError(ssz_types::Error),
-    HelperError,
+    HelperError(HelperError),
 }
 
 impl From<SzzError> for Error {
     fn from(error: SzzError) -> Self {
         Error::SszTypesError(error)
+    }
+}
+
+impl From<HelperError> for Error {
+    fn from(error: HelperError) -> Self {
+        Error::HelperError(error)
     }
 }
 
@@ -92,7 +100,7 @@ pub struct BeaconState<C: Config> {
     pub finalized_checkpoint: Checkpoint,
 }
 
-impl<C: Config> BeaconState<C>{
+impl<C: Config> BeaconState<C> {
     pub fn canonical_root(&self) -> Hash256 {
         Hash256::from_slice(&self.tree_hash_root()[..])
     }
@@ -125,17 +133,9 @@ impl<C: Config> BeaconState<C>{
         Ok(())
     }
 
-
-
-    pub fn set_block_root(
-        &mut self,
-        slot: Slot,
-        block_root: Hash256,
-    ) -> Result<(), Error> {
+    pub fn set_block_root(&mut self, slot: Slot, block_root: Hash256) -> Result<(), Error> {
         let i = self.get_latest_block_roots_index(slot)?;
         self.block_roots[i] = block_root;
         Ok(())
     }
-
-
 }

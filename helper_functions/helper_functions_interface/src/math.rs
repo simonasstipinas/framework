@@ -1,4 +1,4 @@
-use crate::error::Error;
+use types::helper_functions_types::Error;
 
 // ok
 pub fn integer_squareroot(_n: u64) -> u64 {

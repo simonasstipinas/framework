@@ -1,6 +1,6 @@
 use bls::{AggregatePublicKey, PublicKey, PublicKeyBytes, SignatureBytes};
 use ssz::DecodeError;
-use types::primitives::Domain;
+use types::{helper_functions_types, primitives::Domain};
 
 // ok
 pub fn hash(_input: &[u8]) -> Vec<u8> {

@@ -1,6 +1,6 @@
-use crate::error::Error;
 use types::beacon_state::BeaconState;
 use types::config::Config;
+use types::helper_functions_types::Error;
 use types::primitives::{Gwei, ValidatorIndex};
 
 // ok
