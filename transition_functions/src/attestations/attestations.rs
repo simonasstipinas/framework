@@ -26,7 +26,10 @@ where
         &self,
         epoch: Epoch,
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch>;
-    fn get_matching_head_attestations(&self, epoch: Epoch);
+    fn get_matching_head_attestations(
+        &self,
+        epoch: Epoch,
+    ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch>;
     fn get_unslashed_attesting_indices(
         &self,
         attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch>,
@@ -45,12 +48,12 @@ where
         &self,
         epoch: Epoch,
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
-        assert!(epoch == get_previous_epoch(&state) || epoch == get_current_epoch(&state));
-        if epoch == get_current_epoch(&state) {
-            return state.current_epoch_attestations;
+        assert!(epoch == get_previous_epoch(&self) || epoch == get_current_epoch(&self));
+        if epoch == get_current_epoch(&self) {
+            return self.current_epoch_attestations;
         }
         else {
-            return state.previous_epoch_attestations;
+            return self.previous_epoch_attestations;
         }
     }
     fn get_matching_target_attestations(
@@ -59,7 +62,7 @@ where
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
         let target_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> = VariableList::from(vec![]);
         for a in self.get_matching_source_attestations(get_current_epoch(&self)).iter() {
-            if a.data.target.root == get_block_root(&state, epoch).unwrap() {
+            if a.data.target.root == get_block_root(&self, epoch).unwrap() {
                 target_attestations.push(*a);
             }
         }
@@ -70,18 +73,13 @@ where
         epoch: Epoch,
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
         let head_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> = VariableList::from(vec![]);
-        for a in self.get_matching_source_attestations().iter(){
-            if(a.data.beacon_block_root == get_block_root_at_slot(state, a.data.slot).unwrap()){
+        for a in self.get_matching_source_attestations(get_current_epoch(&self)).iter() {
+            if a.data.beacon_block_root == get_block_root_at_slot(&self, a.data.slot){
                 head_attestations.push(*a);
             }
         }
-        
         return head_attestations;
-        return [
-            a for a in get_matching_source_attestations(state, epoch)
-            if a.data.beacon_block_root == get_block_root_at_slot(state, a.data.slot)
-        ]
-    }
+}
     fn get_unslashed_attesting_indices(
         &self,
         attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch>,
@@ -105,21 +103,3 @@ where
         return get_total_balance(&self, &self.get_unslashed_attesting_indices(attestations)).unwrap();
     }
 }
-
-
-
-// fn get_matching_head_attestations(state: BeaconState<T>, epoch: Epoch)
-//  -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
-//     return [
-//         a for a in get_matching_source_attestations(state, epoch)
-//         if a.data.beacon_block_root == get_block_root_at_slot(state, a.data.slot)
-//     ]
-// }
-
-// fn get_unslashed_attesting_indices(state: BeaconState<T>,
-//                                     attestations: Sequence[PendingAttestation]) /*-> Set[ValidatorIndex]*/{
-//     let mut output = set();  //# type: Set[ValidatorIndex]
-//     for a in attestations:
-//         output = output.union(get_attesting_indices(state, a.data, a.aggregation_bits))
-//     return set(filter(lambda index: not state.validators[index].slashed, output))
-// }
