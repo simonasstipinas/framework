@@ -1,3 +1,5 @@
+use crate::error::Error;
+use mockall::*;
 use ssz_types::BitList;
 use types::{
     beacon_state::BeaconState,
@@ -6,11 +8,9 @@ use types::{
     types::{Attestation, AttestationData, IndexedAttestation},
 };
 
-use crate::error::Error;
-
 // ok
 pub fn get_current_epoch<C: Config>(_state: &BeaconState<C>) -> Epoch {
-    0
+    23
 }
 
 // ok
@@ -119,4 +119,18 @@ pub fn get_attesting_indices<'a, C: Config>(
     _bitlist: &BitList<C::MaxValidatorsPerCommittee>,
 ) -> Result<impl Iterator<Item = &'a ValidatorIndex>, Error> {
     Ok([].iter())
+}
+
+#[automock]
+pub trait Helper {
+    fn get_current_epoch(&self) -> Epoch;
+}
+
+impl<C> Helper for BeaconState<C>
+where
+    C: Config,
+{
+    fn get_current_epoch(&self) -> Epoch {
+        get_current_epoch(self)
+    }
 }

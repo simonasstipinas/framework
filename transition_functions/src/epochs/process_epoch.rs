@@ -1,17 +1,19 @@
 use core::consts::ExpConst;
 use helper_functions::{
-    beacon_state_accessors::{get_current_epoch, get_validator_churn_limit, get_total_active_balance},
+    beacon_state_accessors::{
+        get_current_epoch, get_total_active_balance, get_validator_churn_limit, Helper,
+    },
     beacon_state_mutators::initiate_validator_exit,
     misc::compute_activation_exit_epoch,
     predicates::is_active_validator,
 };
-use ssz_types::VariableList;
-use types::types::Eth1Data;
 use itertools::{Either, Itertools};
-use types::consts::*;
-use types::primitives::*;
+use ssz_types::VariableList;
 use std::cmp;
+use types::consts::*;
 use types::primitives::ValidatorIndex;
+use types::primitives::*;
+use types::types::Eth1Data;
 use types::{
     beacon_state::*,
     config::{Config, MainnetConfig},
@@ -27,7 +29,7 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
     };
 
     let is_exiting_validator = |validator: &Validator| {
-        is_active_validator(validator, get_current_epoch(&state_copy))
+        is_active_validator(validator, state_copy.get_current_epoch())
             && validator.effective_balance <= T::ejection_balance()
     };
 
@@ -126,11 +128,25 @@ fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
 
 #[cfg(test)]
 mod process_epoch_tests {
-    use types::{beacon_state::*, config::MainnetConfig};
     use super::*;
+    use helper_functions::beacon_state_accessors::MockHelper;
+    use mockall::mock;
+    use types::{beacon_state::*, config::MainnetConfig};
+    mock! {
+        BeaconState<C: Config + 'static> {}
+        trait Helper {
+            fn get_current_epoch(&self) -> Epoch;
+        }
+    }
 
     #[test]
-    fn process_good_epoch() {
-        assert_eq!(1, 1);
+    fn sdofk() {
+        // let mut bs: BeaconState<MainnetConfig> = BeaconState {
+        //     ..BeaconState::default()
+        // };
+
+        let mut bs = MockBeaconState::<MainnetConfig>::new();
+        bs.expect_get_current_epoch().return_const(5_u64);
+        assert_eq!(5, bs.get_current_epoch());
     }
 }
