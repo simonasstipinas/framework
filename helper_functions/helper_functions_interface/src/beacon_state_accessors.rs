@@ -1,9 +1,9 @@
-use crate::error::Error;
 use mockall::*;
 use ssz_types::BitList;
 use types::{
     beacon_state::BeaconState,
     config::Config,
+    helper_functions_types::Error,
     primitives::*,
     types::{Attestation, AttestationData, IndexedAttestation},
 };
