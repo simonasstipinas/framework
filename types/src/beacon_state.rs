@@ -1,10 +1,10 @@
+use crate::{config::*, consts, primitives::*, types::*};
+use ethereum_types::H256 as Hash256;
 use serde::{Deserialize, Serialize};
 use ssz_derive::{Decode, Encode};
-use ssz_types::{BitVector, FixedVector, VariableList};
-use tree_hash_derive::TreeHash;
-use ethereum_types::{H256 as Hash256};
-use crate::{config::*, consts, primitives::*, types::*};
+use ssz_types::{BitVector, Error as SzzError, FixedVector, VariableList};
 use tree_hash::TreeHash;
+use tree_hash_derive::TreeHash;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -36,7 +36,14 @@ pub enum Error {
     CurrentCommitteeCacheUninitialized,
     //RelativeEpochError(RelativeEpochError),
     //CommitteeCacheUninitialized(RelativeEpoch),
-    //SszTypesError(ssz_types::Error),
+    SszTypesError(ssz_types::Error),
+    HelperError,
+}
+
+impl From<SzzError> for Error {
+    fn from(error: SzzError) -> Self {
+        Error::SszTypesError(error)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Encode, Decode, TreeHash, Default)]

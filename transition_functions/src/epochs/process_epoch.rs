@@ -1,15 +1,14 @@
-use core::consts::ExpConst;
+use crate::attestations::*;
+use core::{consts::ExpConst, convertors::*};
 use helper_functions::{
     beacon_state_accessors::{
-        get_current_epoch, get_randao_mix, get_total_active_balance, get_validator_churn_limit,
-        Helper,
+        get_randao_mix, get_total_active_balance, get_validator_churn_limit, BeaconStateAccessor,
     },
     beacon_state_mutators::{decrease_balance, initiate_validator_exit},
     misc::compute_activation_exit_epoch,
     predicates::is_active_validator,
 };
 use itertools::{Either, Itertools};
-use ssz_types::VariableList;
 use ssz_types::VariableList;
 use std::cmp;
 use types::primitives::*;
@@ -18,8 +17,75 @@ use types::types::{Eth1Data, HistoricalBatch};
 use types::{
     beacon_state::*,
     config::{Config, MainnetConfig},
-    types::{PendingAttestation, Validator},
+    types::{Checkpoint, PendingAttestation, Validator},
 };
+
+fn process_justification_and_finalization<T: Config + ExpConst>(
+    state: &mut BeaconState<T>,
+) -> Result<(), Error> {
+    if state.get_current_epoch() <= T::genesis_epoch() + 1 {
+        return Ok(());
+    }
+
+    let previous_epoch = state.get_previous_epoch();
+    let current_epoch = state.get_current_epoch();
+    let old_previous_justified_checkpoint = state.previous_justified_checkpoint;
+    let old_current_justified_checkpoint = state.current_justified_checkpoint;
+
+    // Process justifications
+    state.previous_justified_checkpoint = state.current_justified_checkpoint.clone();
+    state.justification_bits.shift_up(1)?;
+    //Previous epoch
+    let matching_target_attestations = state.get_matching_target_attestations(previous_epoch);
+    if state.get_attesting_balance(matching_target_attestations) * 3
+        >= state.get_total_active_balance()? * 2
+    {
+        state.current_justified_checkpoint = Checkpoint {
+            epoch: previous_epoch,
+            root: *state.get_block_root(previous_epoch)?,
+        };
+        state.justification_bits.set(1, true)?;
+    }
+
+    // Current epoch
+    let matching_target_attestations = state.get_matching_target_attestations(current_epoch);
+    if state.get_attesting_balance(matching_target_attestations) * 3
+        >= state.get_total_active_balance() * 2
+    {
+        state.current_justified_checkpoint = Checkpoint {
+            epoch: current_epoch,
+            root: *state.get_block_root(current_epoch)?,
+        };
+        state.justification_bits.set(0, true)?;
+    }
+
+    // The 2nd/3rd/4th most recent epochs are all justified, the 2nd using the 4th as source.
+    if (1..4).all(|i| state.justification_bits.get(i).unwrap_or(false))
+        && old_previous_justified_checkpoint.epoch + 3 == current_epoch
+    {
+        state.finalized_checkpoint = old_previous_justified_checkpoint;
+    }
+    // The 2nd/3rd most recent epochs are both justified, the 2nd using the 3rd as source.
+    else if (1..3).all(|i| state.justification_bits.get(i).unwrap_or(false))
+        && old_previous_justified_checkpoint.epoch + 2 == current_epoch
+    {
+        state.finalized_checkpoint = old_previous_justified_checkpoint;
+    }
+    // The 1st/2nd/3rd most recent epochs are all justified, the 1st using the 3nd as source.
+    if (0..3).all(|i| state.justification_bits.get(i).unwrap_or(false))
+        && old_current_justified_checkpoint.epoch + 2 == current_epoch
+    {
+        state.finalized_checkpoint = old_current_justified_checkpoint;
+    }
+    // The 1st/2nd most recent epochs are both justified, the 1st using the 2nd as source.
+    else if (0..2).all(|i| state.justification_bits.get(i).unwrap_or(false))
+        && old_current_justified_checkpoint.epoch + 1 == current_epoch
+    {
+        state.finalized_checkpoint = old_current_justified_checkpoint;
+    }
+
+    Ok(())
+}
 
 fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
     let state_copy = state.clone();
@@ -48,7 +114,7 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
         });
 
     for index in eligible {
-        state.validators[index].activation_eligibility_epoch = get_current_epoch(&state_copy);
+        state.validators[index].activation_eligibility_epoch = state_copy.get_current_epoch();
     }
     for index in exiting {
         initiate_validator_exit(state, index as u64);
@@ -71,7 +137,7 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
 
     let churn_limit = get_validator_churn_limit(&state);
     let delayed_activation_epoch =
-        compute_activation_exit_epoch::<T>(get_current_epoch(&state) as u64);
+        compute_activation_exit_epoch::<T>(state.get_current_epoch() as u64);
     for index in activation_queue.into_iter().take(churn_limit as usize) {
         let validator = &mut state.validators[index];
         if validator.activation_epoch == T::far_future_epoch() {
@@ -148,24 +214,26 @@ fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
 #[cfg(test)]
 mod process_epoch_tests {
     use super::*;
-    use helper_functions::beacon_state_accessors::MockHelper;
+    use helper_functions::error::Error as hfError;
     use mockall::mock;
     use types::{beacon_state::*, config::MainnetConfig};
     mock! {
         BeaconState<C: Config + 'static> {}
-        trait Helper {
+        trait BeaconStateAccessor {
             fn get_current_epoch(&self) -> Epoch;
+            fn get_previous_epoch(&self) -> Epoch;
+            fn get_block_root(&self, _epoch: Epoch) -> Result<H256, hfError>;
         }
     }
 
-    #[test]
-    fn sdofk() {
-        // let mut bs: BeaconState<MainnetConfig> = BeaconState {
-        //     ..BeaconState::default()
-        // };
+    // #[test]
+    // fn test() {
+    //     // let mut bs: BeaconState<MainnetConfig> = BeaconState {
+    //     //     ..BeaconState::default()
+    //     // };
 
-        let mut bs = MockBeaconState::<MainnetConfig>::new();
-        bs.expect_get_current_epoch().return_const(5_u64);
-        assert_eq!(5, bs.get_current_epoch());
-    }
+    //     let mut bs = MockBeaconState::<MainnetConfig>::new();
+    //     bs.expect_get_current_epoch().return_const(5_u64);
+    //     assert_eq!(5, bs.get_current_epoch());
+    // }
 }

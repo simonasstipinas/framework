@@ -122,15 +122,28 @@ pub fn get_attesting_indices<'a, C: Config>(
 }
 
 #[automock]
-pub trait Helper {
+pub trait BeaconStateAccessor {
     fn get_current_epoch(&self) -> Epoch;
+    fn get_previous_epoch(&self) -> Epoch;
+    fn get_block_root(&self, _epoch: Epoch) -> Result<H256, Error>;
+    fn get_total_active_balance(&self) -> Result<u64, Error>;
 }
 
-impl<C> Helper for BeaconState<C>
+impl<C> BeaconStateAccessor for BeaconState<C>
 where
     C: Config,
 {
     fn get_current_epoch(&self) -> Epoch {
         get_current_epoch(self)
+    }
+
+    fn get_previous_epoch(&self) -> Epoch {
+        get_previous_epoch(self)
+    }
+    fn get_block_root(&self, _epoch: Epoch) -> Result<H256, Error> {
+        get_block_root(self, _epoch)
+    }
+    fn get_total_active_balance(&self) -> Result<u64, Error> {
+        get_total_active_balance(self)
     }
 }
