@@ -11,6 +11,13 @@ use std::collections::BTreeSet;
 use std::convert::TryInto;
 use core::consts::ExpConst;
 
+fn process_block<T: Config + ExpConst>(state: &BeaconState<T>, block: &BeaconBlock<T>) {
+    process_block_header(*state, *block);
+    process_randao(*state, block.body);
+    process_eth1_data(&mut state, block.body);
+    process_operations(&mut state, block.body);
+}
+
 fn process_voluntary_exit<T: Config + ExpConst>(state: &mut BeaconState<T>,exit: VoluntaryExit){
     let validator = state.validators[exit.validator_index as usize];
     // Verify the validator is active
@@ -48,7 +55,6 @@ fn process_deposit<T: Config + ExpConst>(state: &mut BeaconState<T>, deposit: De
         // bls::PublicKeyBytes::from_bytes(&v.pubkey.as_bytes()).unwrap()
         if  v.pubkey.try_into().unwrap() == pubkey {
             //# Increase balance by deposit amount
-            // index = ValidatorIndex(index);
             increase_balance(state, index as u64, amount);
             return;
         }
