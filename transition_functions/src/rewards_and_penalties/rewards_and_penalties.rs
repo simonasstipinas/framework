@@ -14,16 +14,9 @@ pub trait StakeholderBlock<T>
 where
     T: Config + ExpConst,
 {
-    fn get_base_reward(
-        self,
-        index: ValidatorIndex
-    ) -> Gwei;
-    fn get_attestation_deltas(
-        self
-    ) -> (Vec<Gwei>, Vec<Gwei>);
-    fn process_rewards_and_penalties(
-        self
-    );
+    fn get_base_reward(&self, index: ValidatorIndex) -> Gwei;
+    fn get_attestation_deltas(&self) -> (Vec<Gwei>, Vec<Gwei>);
+    fn process_rewards_and_penalties(&self);
 }
 
 impl<T> StakeholderBlock<T> for BeaconState<T>
