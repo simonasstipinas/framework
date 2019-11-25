@@ -1,43 +1,44 @@
-use bls::{AggregatePublicKey, PublicKey, PublicKeyBytes, SignatureBytes};
+use bls::{AggregatePublicKey, PublicKey, PublicKeyBytes, Signature, SignatureBytes};
+use ring::digest::{digest, SHA256};
 use ssz::DecodeError;
-use types::{helper_functions_types, primitives::Domain};
+use std::convert::TryInto;
+use tree_hash::{SignedRoot, TreeHash};
+use types::primitives::*;
 
-// ok
-pub fn hash(_input: &[u8]) -> Vec<u8> {
-    [].to_vec()
+pub fn hash(input: &[u8]) -> Vec<u8> {
+    digest(&SHA256, input).as_ref().to_vec()
 }
 
-// ok
-//pub fn hash_tree_root(_object : obj) -> H256 {
-//    use TreeRoot derive
-//}
-
-// ok
-//pub fn signed_root(_object : obj) -> H256 {
-//    use SignedRoot derive
-//}
-
-// ok
 pub fn bls_verify(
-    _pubkey: &PublicKeyBytes,
-    _message: &[u8],
-    _signature: &SignatureBytes,
-    _domain: Domain,
+    pubkey: &PublicKeyBytes,
+    message: &[u8],
+    signature: &SignatureBytes,
+    domain: Domain,
 ) -> Result<bool, DecodeError> {
-    Ok(true)
+    let public_key: PublicKey = pubkey.try_into()?;
+    let signature: Signature = signature.try_into()?;
+
+    Ok(signature.verify(message, domain, &public_key))
 }
 
-// ok
-pub fn bls_verify_multiple(
-    _pubkeys: &[&PublicKeyBytes],
-    _messages: &[&[u8]],
-    _signature: &SignatureBytes,
-    _domain: Domain,
-) -> Result<bool, DecodeError> {
-    Ok(true)
+pub fn bls_aggregate_pubkeys(pubkeys: &[PublicKey]) -> AggregatePublicKey {
+    let mut aggregated = AggregatePublicKey::new();
+    for pubkey in pubkeys {
+        aggregated.add(pubkey);
+    }
+    aggregated
 }
 
-// ok
-pub fn bls_aggregate_pubkeys(_pubkeys: &[PublicKey]) -> AggregatePublicKey {
-    AggregatePublicKey::new()
+pub fn hash_tree_root<T: TreeHash>(object: &T) -> H256 {
+    let hash_root = object.tree_hash_root();
+    let hash: &[u8; 32] = hash_root[1..32]
+        .try_into()
+        .expect("Incorrect Tree Hash Root");
+    H256::from_slice(hash)
+}
+
+pub fn signed_root<T: SignedRoot>(object: &T) -> H256 {
+    let hash_root = object.signed_root();
+    let hash: &[u8; 32] = hash_root[1..32].try_into().expect("Incorrect Signed Root");
+    H256::from(hash)
 }
