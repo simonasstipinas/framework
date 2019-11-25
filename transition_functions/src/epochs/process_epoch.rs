@@ -1,4 +1,4 @@
-use crate::attestations::*;
+use crate::attestations::{attestations::AttestableBlock, *};
 use core::{consts::ExpConst, convertors::*};
 use helper_functions::{
     beacon_state_accessors::{
@@ -42,7 +42,7 @@ fn process_justification_and_finalization<T: Config + ExpConst>(
     {
         state.current_justified_checkpoint = Checkpoint {
             epoch: previous_epoch,
-            root: *state.get_block_root(previous_epoch)?,
+            root: state.get_block_root(previous_epoch)?,
         };
         state.justification_bits.set(1, true)?;
     }
@@ -50,11 +50,11 @@ fn process_justification_and_finalization<T: Config + ExpConst>(
     // Current epoch
     let matching_target_attestations = state.get_matching_target_attestations(current_epoch);
     if state.get_attesting_balance(matching_target_attestations) * 3
-        >= state.get_total_active_balance() * 2
+        >= state.get_total_active_balance()? * 2
     {
         state.current_justified_checkpoint = Checkpoint {
             epoch: current_epoch,
-            root: *state.get_block_root(current_epoch)?,
+            root: state.get_block_root(current_epoch)?,
         };
         state.justification_bits.set(0, true)?;
     }
@@ -146,94 +146,110 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
     }
 }
 
-fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
-    let epoch = get_current_epoch(&state);
-    let total_balance = get_total_active_balance(&state);
+// def process_rewards_and_penalties(state: BeaconState) -> None:
+//     if get_current_epoch(state) == GENESIS_EPOCH:
+//         return
 
-    let epoch = get_current_epoch(state);
-    let total_balance = get_total_active_balance(state).unwrap();
+//     rewards, penalties = get_attestation_deltas(state)
+//     for index in range(len(state.validators)):
+//         increase_balance(state, ValidatorIndex(index), rewards[index])
+//         decrease_balance(state, ValidatorIndex(index), penalties[index])
 
-    for (index, validator) in state.validators.iter().enumerate() {
-        if validator.slashed
-            && epoch + T::epochs_per_slashings_vector() / 2 == validator.withdrawable_epoch
-        {
-            let increment = T::effective_balance_increment();
-            let slashings_sum = state.slashings.iter().sum::<u64>();
-            let penalty_numerator = validator.effective_balance / increment
-                * cmp::min(slashings_sum * 3, total_balance);
-            let penalty = penalty_numerator / total_balance * increment;
-            decrease_balance(state, index as u64, penalty);
-        }
-    }
-}
-
-fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
-    let current_epoch = get_current_epoch(&state);
-    let next_epoch = current_epoch + 1 as Epoch;
-    //# Reset eth1 data votes
-    if (state.slot + 1) % (SLOTS_PER_ETH1_VOTING_PERIOD as u64) == 0 {
-        state.eth1_data_votes: VariableList<Eth1Data, T::SlotsPerEth1VotingPeriod> =
-            VariableList::from(vec![]);
-    }
-    //# Update effective balances with hysteresis
-    for (index, validator) in state.validators.iter().enumerate() {
-        let balance = state.balances[index];
-        let HALF_INCREMENT = T::effective_balance_increment() / 2;
-        if balance < validator.effective_balance
-            || validator.effective_balance + 3 * HALF_INCREMENT < balance
-        {
-            validator.effective_balance = cmp::min(
-                balance - balance % T::effective_balance_increment(),
-                T::max_effective_balance(),
-            );
-        }
-    }
-
-    //# Reset slashings
-    state.slashings[(next_epoch % T::epochs_per_slashings_vector()) as usize] = 0 as Gwei;
-    //# Set randao mix
-    state.randao_mixes[(next_epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize] =
-        get_randao_mix(&state, current_epoch).unwrap();
-    //# Set historical root accumulator
-    if next_epoch % (T::slots_per_historical_root() / T::slots_per_epoch()) == 0 {
-        let historical_batch = HistoricalBatch {
-            block_roots: state.block_roots,
-            state_roots: state.state_roots,
-        };
-        state
-            .historical_roots
-            .push(hash_tree_root(historical_batch));
-    }
-    //# Rotate current/previous epoch attestations
-    state.previous_epoch_attestations = state.current_epoch_attestations;
-    state.current_epoch_attestations:
-        VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
-        VariableList::from(vec![]);
-}
-
-#[cfg(test)]
-mod process_epoch_tests {
-    use super::*;
-    use helper_functions::error::Error as hfError;
-    use mockall::mock;
-    use types::{beacon_state::*, config::MainnetConfig};
-    mock! {
-        BeaconState<C: Config + 'static> {}
-        trait BeaconStateAccessor {
-            fn get_current_epoch(&self) -> Epoch;
-            fn get_previous_epoch(&self) -> Epoch;
-            fn get_block_root(&self, _epoch: Epoch) -> Result<H256, hfError>;
-        }
-    }
-
-    // #[test]
-    // fn test() {
-    //     // let mut bs: BeaconState<MainnetConfig> = BeaconState {
-    //     //     ..BeaconState::default()
-    //     // };
-
-    //     let mut bs = MockBeaconState::<MainnetConfig>::new();
-    //     bs.expect_get_current_epoch().return_const(5_u64);
-    //     assert_eq!(5, bs.get_current_epoch());
+fn process_rewards_and_penalties<T: Config + ExpConst>(state: &mut BeaconState<T>) {
+    // if state.get_current_epoch() == T::genesis_epoch() {
+    //     Ok(())
     // }
+
+    // let (rewards, penalties) = state.get_attestation_deltas();
 }
+
+// fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
+//     let epoch = get_current_epoch(&state);
+//     let total_balance = get_total_active_balance(&state);
+
+//     let epoch = get_current_epoch(state);
+//     let total_balance = get_total_active_balance(state).unwrap();
+
+//     for (index, validator) in state.validators.iter().enumerate() {
+//         if validator.slashed
+//             && epoch + T::epochs_per_slashings_vector() / 2 == validator.withdrawable_epoch
+//         {
+//             let increment = T::effective_balance_increment();
+//             let slashings_sum = state.slashings.iter().sum::<u64>();
+//             let penalty_numerator = validator.effective_balance / increment
+//                 * cmp::min(slashings_sum * 3, total_balance);
+//             let penalty = penalty_numerator / total_balance * increment;
+//             decrease_balance(state, index as u64, penalty);
+//         }
+//     }
+// }
+
+// fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
+//     let current_epoch = get_current_epoch(&state);
+//     let next_epoch = current_epoch + 1 as Epoch;
+//     //# Reset eth1 data votes
+//     if (state.slot + 1) % (SLOTS_PER_ETH1_VOTING_PERIOD as u64) == 0 {
+//         state.eth1_data_votes: VariableList<Eth1Data, T::SlotsPerEth1VotingPeriod> =
+//             VariableList::from(vec![]);
+//     }
+//     //# Update effective balances with hysteresis
+//     for (index, validator) in state.validators.iter().enumerate() {
+//         let balance = state.balances[index];
+//         let HALF_INCREMENT = T::effective_balance_increment() / 2;
+//         if balance < validator.effective_balance
+//             || validator.effective_balance + 3 * HALF_INCREMENT < balance
+//         {
+//             validator.effective_balance = cmp::min(
+//                 balance - balance % T::effective_balance_increment(),
+//                 T::max_effective_balance(),
+//             );
+//         }
+//     }
+
+//     //# Reset slashings
+//     state.slashings[(next_epoch % T::epochs_per_slashings_vector()) as usize] = 0 as Gwei;
+//     //# Set randao mix
+//     state.randao_mixes[(next_epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize] =
+//         get_randao_mix(&state, current_epoch).unwrap();
+//     //# Set historical root accumulator
+//     if next_epoch % (T::slots_per_historical_root() / T::slots_per_epoch()) == 0 {
+//         let historical_batch = HistoricalBatch {
+//             block_roots: state.block_roots,
+//             state_roots: state.state_roots,
+//         };
+//         state
+//             .historical_roots
+//             .push(hash_tree_root(historical_batch));
+//     }
+//     //# Rotate current/previous epoch attestations
+//     state.previous_epoch_attestations = state.current_epoch_attestations;
+//     state.current_epoch_attestations:
+//         VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
+//         VariableList::from(vec![]);
+// }
+
+// #[cfg(test)]
+// mod process_epoch_tests {
+//     use super::*;
+//     use mockall::mock;
+//     use types::{beacon_state::*, config::MainnetConfig};
+//     mock! {
+//         BeaconState<C: Config + 'static> {}
+//         trait BeaconStateAccessor {
+//             fn get_current_epoch(&self) -> Epoch;
+//             fn get_previous_epoch(&self) -> Epoch;
+//             fn get_block_root(&self, _epoch: Epoch) -> Result<H256, hfError>;
+//         }
+//     }
+
+//     // #[test]
+//     // fn test() {
+//     //     // let mut bs: BeaconState<MainnetConfig> = BeaconState {
+//     //     //     ..BeaconState::default()
+//     //     // };
+
+//     //     let mut bs = MockBeaconState::<MainnetConfig>::new();
+//     //     bs.expect_get_current_epoch().return_const(5_u64);
+//     //     assert_eq!(5, bs.get_current_epoch());
+//     // }
+// }
