@@ -126,6 +126,7 @@ pub trait BeaconStateAccessor {
     fn get_current_epoch(&self) -> Epoch;
     fn get_previous_epoch(&self) -> Epoch;
     fn get_block_root(&self, _epoch: Epoch) -> Result<H256, Error>;
+    fn get_block_root_at_slot(&self, _slot: Slot) -> Result<H256, Error>;
     fn get_total_active_balance(&self) -> Result<u64, Error>;
 }
 
@@ -142,6 +143,9 @@ where
     }
     fn get_block_root(&self, _epoch: Epoch) -> Result<H256, Error> {
         get_block_root(self, _epoch)
+    }
+    fn get_block_root_at_slot(&self, _slot: Slot) -> Result<H256, Error> {
+        get_block_root_at_slot(self, _slot)
     }
     fn get_total_active_balance(&self) -> Result<u64, Error> {
         get_total_active_balance(self)
