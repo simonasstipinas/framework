@@ -11,7 +11,9 @@ use helper_functions::{
 use itertools::{Either, Itertools};
 use ssz_types::VariableList;
 use std::cmp;
+use helper_functions::beacon_state_accessors::*;
 use types::primitives::*;
+use types::consts::*;
 use types::primitives::{Gwei, ValidatorIndex};
 use types::types::{Eth1Data, HistoricalBatch};
 use types::{
@@ -156,11 +158,11 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
 //         decrease_balance(state, ValidatorIndex(index), penalties[index])
 
 fn process_rewards_and_penalties<T: Config + ExpConst>(state: &mut BeaconState<T>) {
-    // if state.get_current_epoch() == T::genesis_epoch() {
-    //     Ok(())
-    // }
+    if state.get_current_epoch() == T::genesis_epoch() {
+        Ok(());
+    }
 
-    // let (rewards, penalties) = state.get_attestation_deltas();
+    let (rewards, penalties) = state.get_attestation_deltas();
 }
 
 // fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
@@ -184,49 +186,48 @@ fn process_rewards_and_penalties<T: Config + ExpConst>(state: &mut BeaconState<T
 //     }
 // }
 
-// fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
-//     let current_epoch = get_current_epoch(&state);
-//     let next_epoch = current_epoch + 1 as Epoch;
-//     //# Reset eth1 data votes
-//     if (state.slot + 1) % (SLOTS_PER_ETH1_VOTING_PERIOD as u64) == 0 {
-//         state.eth1_data_votes: VariableList<Eth1Data, T::SlotsPerEth1VotingPeriod> =
-//             VariableList::from(vec![]);
-//     }
-//     //# Update effective balances with hysteresis
-//     for (index, validator) in state.validators.iter().enumerate() {
-//         let balance = state.balances[index];
-//         let HALF_INCREMENT = T::effective_balance_increment() / 2;
-//         if balance < validator.effective_balance
-//             || validator.effective_balance + 3 * HALF_INCREMENT < balance
-//         {
-//             validator.effective_balance = cmp::min(
-//                 balance - balance % T::effective_balance_increment(),
-//                 T::max_effective_balance(),
-//             );
-//         }
-//     }
-
-//     //# Reset slashings
-//     state.slashings[(next_epoch % T::epochs_per_slashings_vector()) as usize] = 0 as Gwei;
-//     //# Set randao mix
-//     state.randao_mixes[(next_epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize] =
-//         get_randao_mix(&state, current_epoch).unwrap();
-//     //# Set historical root accumulator
-//     if next_epoch % (T::slots_per_historical_root() / T::slots_per_epoch()) == 0 {
-//         let historical_batch = HistoricalBatch {
-//             block_roots: state.block_roots,
-//             state_roots: state.state_roots,
-//         };
-//         state
-//             .historical_roots
-//             .push(hash_tree_root(historical_batch));
-//     }
-//     //# Rotate current/previous epoch attestations
-//     state.previous_epoch_attestations = state.current_epoch_attestations;
-//     state.current_epoch_attestations:
-//         VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
-//         VariableList::from(vec![]);
-// }
+fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
+    let current_epoch = get_current_epoch(&state);
+    let next_epoch = current_epoch + 1 as Epoch;
+    //# Reset eth1 data votes
+    if (state.slot + 1) % (SLOTS_PER_ETH1_VOTING_PERIOD as u64) == 0 {
+        state.eth1_data_votes: VariableList<Eth1Data, T::SlotsPerEth1VotingPeriod> =
+            VariableList::from(vec![]);
+    }
+    //# Update effective balances with hysteresis
+    for (index, validator) in state.validators.iter().enumerate() {
+        let balance = state.balances[index];
+        let HALF_INCREMENT = T::effective_balance_increment() / 2;
+        if balance < validator.effective_balance
+            || validator.effective_balance + 3 * HALF_INCREMENT < balance
+        {
+            validator.effective_balance = cmp::min(
+                balance - balance % T::effective_balance_increment(),
+                T::max_effective_balance(),
+            );
+        }
+    }
+    //# Reset slashings
+    state.slashings[(next_epoch % T::epochs_per_slashings_vector()) as usize] = 0 as Gwei;
+    //# Set randao mix
+    state.randao_mixes[(next_epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize] =
+        get_randao_mix(&state, current_epoch).unwrap();
+    //# Set historical root accumulator
+    if next_epoch % (T::slots_per_historical_root() / T::slots_per_epoch()) == 0 {
+        let historical_batch = HistoricalBatch {
+            block_roots: state.block_roots,
+            state_roots: state.state_roots,
+        };
+        state
+            .historical_roots
+            .push(hash_tree_root(historical_batch));
+    }
+    //# Rotate current/previous epoch attestations
+    state.previous_epoch_attestations = state.current_epoch_attestations;
+    state.current_epoch_attestations:
+        VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
+        VariableList::from(vec![]);
+}
 
 // #[cfg(test)]
 // mod process_epoch_tests {
