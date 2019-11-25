@@ -62,14 +62,16 @@ where
         &self,
         epoch: Epoch,
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
-        let target_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
-            VariableList::from(vec![]);
+        let mut target_attestations: VariableList<
+            PendingAttestation<T>,
+            T::MaxAttestationsPerEpoch,
+        > = VariableList::from(vec![]);
         for a in self
             .get_matching_source_attestations(get_current_epoch(&self))
             .iter()
         {
             if a.data.target.root == self.get_block_root(epoch).unwrap() {
-                target_attestations.push(*a);
+                target_attestations.push(a.clone());
             }
         }
         return target_attestations;
@@ -78,14 +80,14 @@ where
         &self,
         epoch: Epoch,
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
-        let head_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
+        let mut head_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
             VariableList::from(vec![]);
         for a in self
             .get_matching_source_attestations(self.get_current_epoch())
             .iter()
         {
             if a.data.beacon_block_root == self.get_block_root_at_slot(a.data.slot).unwrap() {
-                head_attestations.push(*a);
+                head_attestations.push(a.clone());
             }
         }
         return head_attestations;
@@ -95,7 +97,7 @@ where
         &self,
         attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch>,
     ) -> VariableList<ValidatorIndex, T::MaxAttestationsPerEpoch> {
-        let output: VariableList<ValidatorIndex, T::MaxAttestationsPerEpoch> =
+        let mut output: VariableList<ValidatorIndex, T::MaxAttestationsPerEpoch> =
             VariableList::from(vec![]);
         for attestation in attestations.iter() {
             let indices =
