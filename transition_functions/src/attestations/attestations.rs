@@ -1,9 +1,9 @@
 use core::ExpConst;
+use helper_functions::beacon_state_accessors::BeaconStateAccessor;
 use helper_functions::{
     beacon_state_accessors::{
         get_attesting_indices, get_block_root, get_current_epoch, get_previous_epoch,
-        get_randao_mix, get_randao_mix, get_total_active_balance, get_total_balance,
-        get_validator_churn_limit,
+        get_randao_mix, get_total_active_balance, get_total_balance, get_validator_churn_limit,
     },
     beacon_state_mutators::{decrease_balance, initiate_validator_exit},
     misc::compute_activation_exit_epoch,
@@ -68,7 +68,7 @@ where
             .get_matching_source_attestations(get_current_epoch(&self))
             .iter()
         {
-            if a.data.target.root == get_block_root(&self, epoch).unwrap() {
+            if a.data.target.root == self.get_block_root(epoch).unwrap() {
                 target_attestations.push(*a);
             }
         }
@@ -81,10 +81,10 @@ where
         let head_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
             VariableList::from(vec![]);
         for a in self
-            .get_matching_source_attestations(get_current_epoch(&self))
+            .get_matching_source_attestations(self.get_current_epoch())
             .iter()
         {
-            if a.data.beacon_block_root == get_block_root_at_slot(&self, a.data.slot) {
+            if a.data.beacon_block_root == self.get_block_root_at_slot(a.data.slot) {
                 head_attestations.push(*a);
             }
         }
