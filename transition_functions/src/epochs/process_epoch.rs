@@ -1,4 +1,5 @@
 use crate::attestations::{attestations::AttestableBlock, *};
+use crate::rewards_and_penalties::rewards_and_penalties::{StakeholderBlock,};
 use core::{consts::ExpConst,
     //  convertors::*
 };
@@ -6,7 +7,7 @@ use helper_functions::{
     beacon_state_accessors::{
         get_randao_mix, get_total_active_balance, get_validator_churn_limit, BeaconStateAccessor,
     },
-    beacon_state_mutators::{decrease_balance, initiate_validator_exit},
+    beacon_state_mutators::*,
     misc::compute_activation_exit_epoch,
     predicates::is_active_validator,
 };
@@ -150,21 +151,17 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
     }
 }
 
-// def process_rewards_and_penalties(state: BeaconState) -> None:
-//     if get_current_epoch(state) == GENESIS_EPOCH:
-//         return
-
-//     rewards, penalties = get_attestation_deltas(state)
-//     for index in range(len(state.validators)):
-//         increase_balance(state, ValidatorIndex(index), rewards[index])
-//         decrease_balance(state, ValidatorIndex(index), penalties[index])
-
 fn process_rewards_and_penalties<T: Config + ExpConst>(state: &mut BeaconState<T>) {
     if state.get_current_epoch() == T::genesis_epoch() {
         Ok(());
     }
 
     let (rewards, penalties) = state.get_attestation_deltas();
+    for index in 0..state.validators.len(){
+        increase_balance(state, index as ValidatorIndex, rewards[index]);
+        decrease_balance(state, index as ValidatorIndex, penalties[index]);
+    }
+
 }
 
 fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
