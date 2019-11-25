@@ -62,7 +62,7 @@ where
         &self,
         epoch: Epoch,
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
-        let target_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
+        let mut target_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
             VariableList::from(vec![]);
         for a in self
             .get_matching_source_attestations(get_current_epoch(&self))
