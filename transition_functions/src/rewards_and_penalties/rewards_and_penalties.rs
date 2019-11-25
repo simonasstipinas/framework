@@ -36,10 +36,10 @@ where
         &self
     ) -> (Vec<Gwei>, Vec<Gwei>) {
         let previous_epoch = self.get_previous_epoch();
-        let total_balance = self.get_total_active_balance();
+        let total_balance = self.get_total_active_balance().unwrap();
         let mut rewards = Vec::new();
         let mut penalties = Vec::new();
-        for i in 0..(self.validators.len()) {
+        for _i in 0..(self.validators.len()) {
             rewards.push(0 as Gwei);
             penalties.push(0 as Gwei);
         }
@@ -55,15 +55,15 @@ where
         let matching_source_attestations = self.get_matching_source_attestations(previous_epoch);
         let matching_target_attestations = self.get_matching_target_attestations(previous_epoch);
         let matching_head_attestations = self.get_matching_head_attestations(previous_epoch);
-        let vec = vec![matching_source_attestations, matching_target_attestations, matching_head_attestations];
+        let vec = vec![matching_source_attestations.clone(), matching_target_attestations.clone(), matching_head_attestations.clone()];
 
-        for attestations in vec.iter() {
-            let unslashed_attesting_indices = self.get_unslashed_attesting_indices(*attestations);
+        for attestations in vec.into_iter() {
+            let unslashed_attesting_indices = self.get_unslashed_attesting_indices(attestations);
             let attesting_balance = get_total_balance(self, &unslashed_attesting_indices).unwrap();
 
             for index in eligible_validator_indices.iter() {
                 if unslashed_attesting_indices.contains(&index) {
-                    rewards[*index as usize] += self.get_base_reward(*index) * attesting_balance; // total_balance
+                    rewards[*index as usize] += ((self.get_base_reward(*index) * attesting_balance) / total_balance) as ValidatorIndex;
                 }
                 else {
                     penalties[*index as usize] += self.get_base_reward(*index);
@@ -72,7 +72,7 @@ where
         }
 
         //# Proposer and inclusion delay micro-rewards
-        for index in self.get_unslashed_attesting_indices(matching_source_attestations).iter() {
+        for index in self.get_unslashed_attesting_indices(matching_source_attestations.clone()).iter() {
             let attestation = matching_source_attestations.iter().fold(None, |min, x| match min {
                 None => Some(x),
                 Some(y) => Some(
@@ -107,8 +107,8 @@ where
         }
         let (rewards, penalties) = self.get_attestation_deltas();
         for index in 0..self.validators.len() {
-            increase_balance(&mut self, index as u64, rewards[index]);
-            decrease_balance(&mut self, index as u64, penalties[index]);
+            increase_balance(self, index as u64, rewards[index]).unwrap();
+            decrease_balance(self, index as u64, penalties[index]).unwrap();
         }
     }
 }
