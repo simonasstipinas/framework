@@ -66,12 +66,12 @@ where
             PendingAttestation<T>,
             T::MaxAttestationsPerEpoch,
         > = VariableList::from(vec![]);
-        for a in self
-            .get_matching_source_attestations(get_current_epoch(&self))
+        for attestation in self
+            .get_matching_source_attestations(epoch)
             .iter()
         {
-            if a.data.target.root == self.get_block_root(epoch).unwrap() {
-                target_attestations.push(a.clone());
+            if attestation.data.target.root == self.get_block_root(epoch).unwrap() {
+                target_attestations.push(attestation.clone()).unwrap();
             }
         }
         return target_attestations;
@@ -82,12 +82,12 @@ where
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
         let mut head_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
             VariableList::from(vec![]);
-        for a in self
-            .get_matching_source_attestations(self.get_current_epoch())
+        for attestation in self
+            .get_matching_source_attestations(epoch)
             .iter()
         {
-            if a.data.beacon_block_root == self.get_block_root_at_slot(a.data.slot).unwrap() {
-                head_attestations.push(a.clone());
+            if attestation.data.beacon_block_root == self.get_block_root_at_slot(attestation.data.slot).unwrap() {
+                head_attestations.push(attestation.clone()).unwrap();
             }
         }
         return head_attestations;
@@ -105,7 +105,7 @@ where
                     .unwrap();
             for index in indices {
                 if self.validators[*index as usize].slashed {
-                    output.push(*index);
+                    output.push(*index).unwrap();
                 }
             }
         }
