@@ -53,9 +53,9 @@ where
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
         assert!(epoch == get_previous_epoch(&self) || epoch == get_current_epoch(&self));
         if epoch == get_current_epoch(&self) {
-            return self.current_epoch_attestations;
+            return self.current_epoch_attestations.clone();
         } else {
-            return self.previous_epoch_attestations;
+            return self.previous_epoch_attestations.clone();
         }
     }
     fn get_matching_target_attestations(
@@ -80,7 +80,9 @@ where
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
         let head_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
             VariableList::from(vec![]);
-        for a in self.get_matching_source_attestations(self.get_current_epoch()).iter()
+        for a in self
+            .get_matching_source_attestations(self.get_current_epoch())
+            .iter()
         {
             if a.data.beacon_block_root == self.get_block_root_at_slot(a.data.slot).unwrap() {
                 head_attestations.push(*a);
