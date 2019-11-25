@@ -1,22 +1,21 @@
 use crate::attestations::{attestations::AttestableBlock, *};
-use crate::rewards_and_penalties::rewards_and_penalties::{StakeholderBlock,};
-use core::{consts::ExpConst,
-    //  convertors::*
-};
+use crate::rewards_and_penalties::rewards_and_penalties::StakeholderBlock;
+use core::consts::ExpConst;
+use helper_functions::beacon_state_accessors::*;
 use helper_functions::{
     beacon_state_accessors::{
         get_randao_mix, get_total_active_balance, get_validator_churn_limit, BeaconStateAccessor,
     },
     beacon_state_mutators::*,
+    crypto::{bls_verify, hash, hash_tree_root, signed_root},
     misc::compute_activation_exit_epoch,
     predicates::is_active_validator,
 };
 use itertools::{Either, Itertools};
 use ssz_types::VariableList;
 use std::cmp;
-use helper_functions::beacon_state_accessors::*;
-use types::primitives::*;
 use types::consts::*;
+use types::primitives::*;
 use types::primitives::{Gwei, ValidatorIndex};
 use types::types::{Eth1Data, HistoricalBatch};
 use types::{
@@ -157,11 +156,10 @@ fn process_rewards_and_penalties<T: Config + ExpConst>(state: &mut BeaconState<T
     }
 
     let (rewards, penalties) = state.get_attestation_deltas();
-    for index in 0..state.validators.len(){
+    for index in 0..state.validators.len() {
         increase_balance(state, index as ValidatorIndex, rewards[index]);
         decrease_balance(state, index as ValidatorIndex, penalties[index]);
     }
-
 }
 
 fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
