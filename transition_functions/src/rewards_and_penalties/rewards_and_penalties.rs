@@ -1,7 +1,7 @@
 use helper_functions;
 use types::{ beacon_state::*, config::{ Config, MainnetConfig }};
-use types::consts::*;
-use types::types::*;
+// use types::consts::*;
+// use types::types::*;
 use core::consts::ExpConst;
 use helper_functions::math::*;
 use types::primitives::*;
@@ -35,8 +35,8 @@ where
     fn get_attestation_deltas(
         &self
     ) -> (Vec<Gwei>, Vec<Gwei>) {
-        let previous_epoch = get_previous_epoch(&self);
-        let total_balance = get_total_active_balance(&self);
+        let previous_epoch = self.get_previous_epoch();
+        let total_balance = self.get_total_active_balance();
         let rewards = Vec::new();
         let penalties = Vec::new();
         for i in 0..(self.validators.len()) {
@@ -52,7 +52,6 @@ where
         }
         
         //# Micro-incentives for matching FFG source, FFG target, and head
-        
         let matching_source_attestations = self.get_matching_source_attestations(previous_epoch);
         let matching_target_attestations = self.get_matching_target_attestations(previous_epoch);
         let matching_head_attestations = self.get_matching_head_attestations(previous_epoch);
@@ -81,10 +80,10 @@ where
                     && x.inclusion_delay < y.inclusion_delay { x } else { y }),
             }).unwrap();
 
-            let proposer_reward = self.get_base_reward(*index) as Gwei; // PROPOSER_REWARD_QUOTIENT;
+            let proposer_reward = (self.get_base_reward(*index) / T::proposer_reward_quotient()) as Gwei;
             rewards[attestation.proposer_index as usize] += proposer_reward;
             let max_attester_reward = self.get_base_reward(*index) - proposer_reward;
-            rewards[*index as usize] += max_attester_reward as Gwei; // attestation.inclusion_delay
+            rewards[*index as usize] += (max_attester_reward / attestation.inclusion_delay) as Gwei;
         }
         //# Inactivity penalty
         let finality_delay = previous_epoch - self.finalized_checkpoint.epoch;
@@ -92,8 +91,8 @@ where
             let matching_target_attesting_indices = self.get_unslashed_attesting_indices(matching_target_attestations);
             for index in eligible_validator_indices {
                 penalties[index as usize] += (T::base_rewards_per_epoch() * self.get_base_reward(index)) as Gwei;
-                if !matching_target_attesting_indices.contains(&index) {
-                    penalties[index as usize] += (self.validators[index as usize].effective_balance * finality_delay) as Gwei; // INACTIVITY_PENALTY_QUOTIENT
+                if !(matching_target_attesting_indices.contains(&index)) {
+                    penalties[index as usize] += ((self.validators[index as usize].effective_balance * finality_delay) / T::inactivity_penalty_quotient()) as Gwei;
                 }
             }
         }
