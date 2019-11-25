@@ -14,5 +14,7 @@ eth2_ssz_types = { path = '../../utils/ssz_types' }
 bls = { path = '../../utils/bls' }
 eth2_ssz = { path = '../../utils/ssz' }
 mockall = "0.5.2"
+ethereum-types = "0.6"
+tree_hash = { path = '../../utils/tree_hash'}
 
 [dev-dependencies]
