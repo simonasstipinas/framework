@@ -1,5 +1,7 @@
 use crate::attestations::{attestations::AttestableBlock, *};
-use core::{consts::ExpConst, convertors::*};
+use core::{consts::ExpConst,
+    //  convertors::*
+};
 use helper_functions::{
     beacon_state_accessors::{
         get_randao_mix, get_total_active_balance, get_validator_churn_limit, BeaconStateAccessor,
@@ -29,8 +31,8 @@ fn process_justification_and_finalization<T: Config + ExpConst>(
 
     let previous_epoch = state.get_previous_epoch();
     let current_epoch = state.get_current_epoch();
-    let old_previous_justified_checkpoint = state.previous_justified_checkpoint;
-    let old_current_justified_checkpoint = state.current_justified_checkpoint;
+    let old_previous_justified_checkpoint = state.previous_justified_checkpoint.clone();
+    let old_current_justified_checkpoint = state.current_justified_checkpoint.clone();
 
     // Process justifications
     state.previous_justified_checkpoint = state.current_justified_checkpoint.clone();
@@ -163,26 +165,23 @@ fn process_rewards_and_penalties<T: Config + ExpConst>(state: &mut BeaconState<T
     // let (rewards, penalties) = state.get_attestation_deltas();
 }
 
-// fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
-//     let epoch = get_current_epoch(&state);
-//     let total_balance = get_total_active_balance(&state);
+fn process_slashings<T: Config + ExpConst>(state: &mut BeaconState<T>) {
+    let epoch = state.get_current_epoch();
+    let total_balance = get_total_active_balance(state).unwrap();
 
-//     let epoch = get_current_epoch(state);
-//     let total_balance = get_total_active_balance(state).unwrap();
-
-//     for (index, validator) in state.validators.iter().enumerate() {
-//         if validator.slashed
-//             && epoch + T::epochs_per_slashings_vector() / 2 == validator.withdrawable_epoch
-//         {
-//             let increment = T::effective_balance_increment();
-//             let slashings_sum = state.slashings.iter().sum::<u64>();
-//             let penalty_numerator = validator.effective_balance / increment
-//                 * cmp::min(slashings_sum * 3, total_balance);
-//             let penalty = penalty_numerator / total_balance * increment;
-//             decrease_balance(state, index as u64, penalty);
-//         }
-//     }
-// }
+    for (index, validator) in state.validators.clone().iter().enumerate() {
+        if validator.slashed
+            && epoch + T::epochs_per_slashings_vector() / 2 == validator.withdrawable_epoch
+        {
+            let increment = T::effective_balance_increment();
+            let slashings_sum = state.slashings.iter().sum::<u64>();
+            let penalty_numerator = validator.effective_balance / increment
+                * cmp::min(slashings_sum * 3, total_balance);
+            let penalty = penalty_numerator / total_balance * increment;
+            decrease_balance(state, index as u64, penalty).unwrap();
+        }
+    }
+}
 
 // fn process_final_updates<T: Config + ExpConst>(state: BeaconState<T>) {
 //     let current_epoch = get_current_epoch(&state);
