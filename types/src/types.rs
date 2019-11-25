@@ -39,6 +39,7 @@ pub struct AttestationData {
     pub source: Checkpoint,
     pub target: Checkpoint,
     pub crosslink: Crosslink,
+    pub slot: Slot,
 }
 
 #[derive(

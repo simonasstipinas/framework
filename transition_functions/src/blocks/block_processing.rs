@@ -185,7 +185,7 @@ fn get_attestation_data_index<T: Config + ExpConst>(state: BeaconState<T>, attes
 fn process_attestation<T: Config + ExpConst>(state: &mut BeaconState<T>, attestation: Attestation<T>){
     let data = attestation.data;
     let index = get_attestation_data_index(*state, attestation.data).unwrap();
-    let attestation_slot = state.slot;
+    let attestation_slot = data.slot;
     assert!(index < get_committee_count_at_slot(state, attestation_slot).unwrap()); //# Nėra index ir slot. ¯\_(ツ)_/¯
     assert!(data.target.epoch == get_previous_epoch(state) || data.target.epoch == get_current_epoch(state));
     assert!(attestation_slot + T::min_attestation_inclusion_delay() <= state.slot && state.slot <= attestation_slot + T::slots_per_epoch());

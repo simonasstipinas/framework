@@ -80,16 +80,15 @@ where
     ) -> VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> {
         let head_attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch> =
             VariableList::from(vec![]);
-        for a in self
-            .get_matching_source_attestations(self.get_current_epoch())
-            .iter()
+        for a in self.get_matching_source_attestations(self.get_current_epoch()).iter()
         {
-            if a.data.beacon_block_root == self.get_block_root_at_slot(a.data.slot) {
+            if a.data.beacon_block_root == self.get_block_root_at_slot(a.data.slot).unwrap() {
                 head_attestations.push(*a);
             }
         }
         return head_attestations;
     }
+
     fn get_unslashed_attesting_indices(
         &self,
         attestations: VariableList<PendingAttestation<T>, T::MaxAttestationsPerEpoch>,
