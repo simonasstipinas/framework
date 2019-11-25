@@ -16,7 +16,7 @@ where
 {
     fn get_base_reward(&self, index: ValidatorIndex) -> Gwei;
     fn get_attestation_deltas(&self) -> (Vec<Gwei>, Vec<Gwei>);
-    fn process_rewards_and_penalties(&self);
+    fn process_rewards_and_penalties(&mut self);
 }
 
 impl<T> StakeholderBlock<T> for BeaconState<T>
@@ -37,13 +37,13 @@ where
     ) -> (Vec<Gwei>, Vec<Gwei>) {
         let previous_epoch = self.get_previous_epoch();
         let total_balance = self.get_total_active_balance();
-        let rewards = Vec::new();
-        let penalties = Vec::new();
+        let mut rewards = Vec::new();
+        let mut penalties = Vec::new();
         for i in 0..(self.validators.len()) {
             rewards.push(0 as Gwei);
             penalties.push(0 as Gwei);
         }
-        let eligible_validator_indices: Vec<ValidatorIndex> = Vec::new();
+        let mut eligible_validator_indices: Vec<ValidatorIndex> = Vec::new();
 
         for (index, v) in self.validators.iter().enumerate() {
             if is_active_validator(v, previous_epoch) || (v.slashed && previous_epoch + 1 < v.withdrawable_epoch) {
@@ -100,7 +100,7 @@ where
     }
 
     fn process_rewards_and_penalties(
-        &self
+        &mut self
     ) {
         if get_current_epoch(&self) == T::genesis_epoch() {
             return;
