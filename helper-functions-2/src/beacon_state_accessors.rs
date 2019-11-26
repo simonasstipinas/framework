@@ -316,6 +316,7 @@ mod tests {
     use super::*;
     use types::config::MinimalConfig;
     use ssz_types::{FixedVector, typenum};
+    use types::types::Validator;
 
     #[test]
     fn test_get_current_epoch() {
@@ -332,7 +333,6 @@ mod tests {
     #[test]
     fn test_get_block_root() {
         let mut state = BeaconState::<MinimalConfig>::default();
-
         let base: Vec<H256> = vec![H256::from([0; 32])];
         let roots: FixedVector<_, typenum::U64> = FixedVector::from(base.clone());
         state.block_roots = roots;
@@ -343,7 +343,6 @@ mod tests {
     #[test]
     fn test_get_block_root_at_slot() {
         let mut state = BeaconState::<MinimalConfig>::default();
-
         let base: Vec<H256> = vec![H256::from([0; 32])];
         let roots: FixedVector<_, typenum::U64> = FixedVector::from(base.clone());
         state.block_roots = roots;
@@ -366,5 +365,14 @@ mod tests {
         let state = BeaconState::<MinimalConfig>::default();
         let result = get_validator_churn_limit::<MinimalConfig>(state);
         assert_eq!(result, MIN_PER_EPOCH_CHURN_LIMIT);
+    }
+
+    #[test]
+    fn test_get_total_balance() {
+        let mut state = BeaconState::<MinimalConfig>::default();
+        state.validators = VariableList::new([Validator::default()].to_vec()).unwrap();
+        let result = get_total_balance::<MinimalConfig>(&state, &[0]);
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(result.unwrap(), 1);
     }
 }

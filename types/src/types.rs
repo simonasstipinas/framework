@@ -196,7 +196,7 @@ pub struct Transfer {
     pub signature: Signature,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, Default)]
 pub struct Validator {
     pub pubkey: PublicKey,
     pub withdrawal_credentials: H256,
