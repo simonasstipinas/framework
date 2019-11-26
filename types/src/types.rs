@@ -33,6 +33,8 @@ pub struct Attestation<C: Config> {
     Default,
 )]
 pub struct AttestationData {
+    pub slot: Slot,
+    pub index: u64,
     pub beacon_block_root: H256,
     pub source: Checkpoint,
     pub target: Checkpoint,
@@ -119,7 +121,18 @@ pub struct BeaconBlockHeader {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Default, Hash, Deserialize, Serialize, Encode, Decode, TreeHash,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Default,
+    Hash,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    Copy,
 )]
 pub struct Checkpoint {
     pub epoch: Epoch,
@@ -227,7 +240,7 @@ pub struct Transfer {
     pub signature: Signature,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, Default)]
 pub struct Validator {
     pub pubkey: PublicKey,
     pub withdrawal_credentials: H256,

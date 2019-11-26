@@ -212,6 +212,8 @@ mod tests {
                 root: H256([0; 32]),
             },
             crosslink: default_crosslink(),
+            index: 0,
+            slot: 0
         }
     }
 
