@@ -6,6 +6,7 @@ use ethereum_types::H256;
 use ssz_types::{BitList, VariableList};
 use std::cmp::max;
 use std::collections::BTreeSet;
+use std::convert::TryFrom;
 use types::beacon_state::BeaconState;
 use types::config::Config;
 use types::consts::*;
@@ -37,7 +38,9 @@ pub fn get_block_root_at_slot<C: Config>(
         return Err(Error::SlotOutOfRange);
     }
 
-    let index = (slot % SLOTS_PER_HISTORICAL_ROOT) as usize;
+    let index =
+        usize::try_from(slot % SLOTS_PER_HISTORICAL_ROOT).expect("Expected successfull cast");
+
     if index >= state.block_roots.len() {
         return Err(Error::IndexOutOfRange);
     }
@@ -46,7 +49,8 @@ pub fn get_block_root_at_slot<C: Config>(
 }
 
 pub fn get_randao_mix<C: Config>(state: &BeaconState<C>, epoch: Epoch) -> Result<H256, Error> {
-    let index = (epoch % EPOCHS_PER_HISTORICAL_VECTOR) as usize;
+    let index =
+        usize::try_from(epoch % EPOCHS_PER_HISTORICAL_VECTOR).expect("Expected successfull cast");
     if index >= state.randao_mixes.len() {
         return Err(Error::IndexOutOfRange);
     }
@@ -94,7 +98,7 @@ pub fn get_active_validator_indices<C: Config>(
 }
 
 pub fn get_validator_churn_limit<C: Config>(state: &BeaconState<C>) -> u64 {
-    let active_validator_indices = get_active_validator_indices(state, get_current_epoch(&state));
+    let active_validator_indices = get_active_validator_indices(state, get_current_epoch(state));
     let active_validator_count = active_validator_indices.len() as u64;
     max(MIN_PER_EPOCH_CHURN_LIMIT, active_validator_count)
 }
@@ -108,7 +112,7 @@ pub fn get_seed<C: Config>(
     domain_type: DomainType,
 ) -> Result<H256, Error> {
     let mix = get_randao_mix(
-        &state,
+        state,
         epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1,
     );
     if mix.is_err() {
@@ -121,7 +125,8 @@ pub fn get_seed<C: Config>(
     }
 
     let mut preimage: [u8; 32] = [0; 32];
-    preimage[0..1].copy_from_slice(&[domain_type as u8]);
+    preimage[0..1]
+        .copy_from_slice(&[u8::try_from(domain_type).expect("Expected successfull conversion")]);
     preimage[2..10].copy_from_slice(&(epoch_bytes.expect("Should be epoch bytes"))[..]);
     preimage[11..].copy_from_slice(&(mix.expect("Expected success"))[..]);
     Ok(H256::from_slice(&hash(&preimage)))
@@ -217,9 +222,6 @@ pub fn get_total_active_balance<C: Config>(state: &BeaconState<C>) -> Result<u64
     get_total_balance(state, &get_active_validator_indices(state, current_epoch))
 }
 
-fn compute_domain(_domain_type: DomainType, _fork_version: Option<&Version>) -> Domain {
-    0
-}
 pub fn get_domain<C: Config>(
     state: &BeaconState<C>,
     domain_type: DomainType,
@@ -258,7 +260,7 @@ pub fn get_indexed_attestation<C: Config>(
         custody_bit_0_indices
             .expect("Expected success getting custody indices")
             .into_iter()
-            .map(|x| *x)
+            .copied()
             .collect(),
     );
     if custody_bit_0_indices_list.is_err() {
@@ -269,7 +271,7 @@ pub fn get_indexed_attestation<C: Config>(
         custody_bit_1_indices
             .expect("Expected success getting custody indices")
             .into_iter()
-            .map(|x| *x)
+            .copied()
             .collect(),
     );
     if custody_bit_1_indices_list.is_err() {

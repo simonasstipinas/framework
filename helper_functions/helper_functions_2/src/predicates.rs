@@ -9,6 +9,7 @@ use typenum::Unsigned;
 use types::{
     beacon_state::BeaconState,
     config::Config,
+    consts::*,
     primitives::{Epoch, H256},
     types::{AttestationData, AttestationDataAndCustodyBit, IndexedAttestation, Validator},
 };
@@ -107,8 +108,11 @@ pub fn validate_indexed_attestation<C: Config>(
 
     if indexed_attestation.signature.verify_multiple(
         &[&hash_1, &hash_2],
-        //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config) (now just passing it's value)
-        accessors::get_domain(state, 1, Some(indexed_attestation.data.target.epoch)),
+        accessors::get_domain(
+            state,
+            DOMAIN_BEACON_ATTESTER,
+            Some(indexed_attestation.data.target.epoch),
+        ),
         &[&aggr_pubkey1, &aggr_pubkey2],
     ) {
         Ok(())
@@ -569,13 +573,21 @@ mod tests {
             let sig1 = Signature::new(
                 digest1.as_slice(),
                 //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
-                accessors::get_domain(&state, 0, Some(attestation.data.target.epoch)),
+                accessors::get_domain(
+                    &state,
+                    DOMAIN_BEACON_ATTESTER,
+                    Some(attestation.data.target.epoch),
+                ),
                 &skey1,
             );
             let sig2 = Signature::new(
                 digest1.as_slice(),
                 //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
-                accessors::get_domain(&state, 0, Some(attestation.data.target.epoch)),
+                accessors::get_domain(
+                    &state,
+                    DOMAIN_BEACON_ATTESTER,
+                    Some(attestation.data.target.epoch),
+                ),
                 &skey2,
             );
 
@@ -590,7 +602,11 @@ mod tests {
                     .expect("Success");
             assert!(attestation.signature.verify(
                 &digest1,
-                accessors::get_domain(&state, 0, Some(attestation.data.target.epoch)),
+                accessors::get_domain(
+                    &state,
+                    DOMAIN_BEACON_ATTESTER,
+                    Some(attestation.data.target.epoch)
+                ),
                 &aggr_pubkey,
             ));
 
