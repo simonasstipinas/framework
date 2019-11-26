@@ -16,7 +16,7 @@ use ethereum_types::H256 as Hash256;
 #[derive(Debug, PartialEq)]
 pub enum Error {}
 
-fn state_transition<T: Config + ExpConst>(state: &mut  BeaconState<T>, block: &BeaconBlock<T>, validate_state_root: bool) -> BeaconState<T>{
+fn state_transition<T: Config + ExpConst>(state: &mut  BeaconState<T>, block: &BeaconBlock<T>, validate_state_root: bool) -> BeaconState<T> {
     //# Process slots (including those with no blocks) since block
     process_slots(state, block.slot);
     //# Process block
