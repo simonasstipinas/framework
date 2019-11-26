@@ -35,7 +35,7 @@ pub fn get_active_validator_indices<C: Config>(
 }
 
 pub fn get_current_epoch<C: Config>(state: &BeaconState<C>) -> Epoch {
-    crate::misc::compute_epoch_at_slot(state.slot)
+    crate::misc::compute_epoch_at_slot::<C>(state.slot)
 }
 
 pub fn get_validator_churn_limit<C: Config>(state: BeaconState<C>) -> u64 {
