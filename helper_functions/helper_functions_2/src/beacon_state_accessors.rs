@@ -2,6 +2,7 @@ use crate::crypto::*;
 use crate::error::Error;
 use crate::misc::*;
 use crate::predicates::is_active_validator;
+use crate::math::*;
 use ethereum_types::H256;
 use ssz_types::{BitList, VariableList};
 use std::cmp::max;
@@ -103,9 +104,6 @@ pub fn get_validator_churn_limit<C: Config>(state: &BeaconState<C>) -> u64 {
     max(MIN_PER_EPOCH_CHURN_LIMIT, active_validator_count)
 }
 
-fn int_to_bytes(_int: u64, _length: usize) -> Result<Vec<u8>, Error> {
-    Ok([].to_vec())
-}
 pub fn get_seed<C: Config>(
     state: &BeaconState<C>,
     epoch: Epoch,
@@ -119,15 +117,18 @@ pub fn get_seed<C: Config>(
         return Err(mix.err().expect("Should be error"));
     }
 
+    print!("epoch: {}", epoch);
     let epoch_bytes = int_to_bytes(epoch, 8);
     if epoch_bytes.is_err() {
         return Err(epoch_bytes.err().expect("Should be error"));
     }
 
+    let epoch_b = epoch_bytes.unwrap();
+    print!("epoch len: {}", epoch_b.len());
     let mut preimage: [u8; 32] = [0; 32];
     preimage[0..1]
         .copy_from_slice(&[u8::try_from(domain_type).expect("Expected successfull conversion")]);
-    preimage[2..10].copy_from_slice(&(epoch_bytes.expect("Should be epoch bytes"))[..]);
+    preimage[2..10].copy_from_slice(&epoch_b[..]);
     preimage[11..].copy_from_slice(&(mix.expect("Expected success"))[..]);
     Ok(H256::from_slice(&hash(&preimage)))
 }
@@ -149,19 +150,11 @@ pub fn get_committee_count_at_slot<C: Config>(
     Ok(count)
 }
 
-fn compute_committee<'a>(
-    _indices: &'a [ValidatorIndex],
-    _seed: &H256,
-    _index: u64,
-    _count: u64,
-) -> Result<impl Iterator<Item = &'a ValidatorIndex>, Error> {
-    Ok([].iter())
-}
 pub fn get_beacon_committee<C: Config>(
     state: &BeaconState<C>,
     slot: Slot,
     index: u64,
-) -> Result<impl Iterator<Item = &ValidatorIndex>, Error> {
+) -> Result<Vec<ValidatorIndex>, Error> {
     let epoch = compute_epoch_at_slot::<C>(slot);
     let committees_per_slot = get_committee_count_at_slot(state, slot);
     if committees_per_slot.is_err() {
@@ -177,16 +170,9 @@ pub fn get_beacon_committee<C: Config>(
     let committees = committees_per_slot.expect("Expected seed");
     let i = (slot % SLOTS_PER_EPOCH) * committees + index;
     let count = committees * SLOTS_PER_EPOCH;
-    compute_committee(indices, &seed.expect("Expected seed"), i, count)
+    compute_committee::<C>(indices, &seed.expect("Expected seed"), i, count)
 }
 
-fn compute_proposer_index<C: Config>(
-    _state: &BeaconState<C>,
-    _indices: &[ValidatorIndex],
-    _seed: &H256,
-) -> Result<ValidatorIndex, Error> {
-    Ok(0)
-}
 pub fn get_beacon_proposer_index<C: Config>(
     state: &BeaconState<C>,
 ) -> Result<ValidatorIndex, Error> {
@@ -260,7 +246,6 @@ pub fn get_indexed_attestation<C: Config>(
         custody_bit_0_indices
             .expect("Expected success getting custody indices")
             .into_iter()
-            .copied()
             .collect(),
     );
     if custody_bit_0_indices_list.is_err() {
@@ -271,7 +256,6 @@ pub fn get_indexed_attestation<C: Config>(
         custody_bit_1_indices
             .expect("Expected success getting custody indices")
             .into_iter()
-            .copied()
             .collect(),
     );
     if custody_bit_1_indices_list.is_err() {
@@ -288,18 +272,18 @@ pub fn get_indexed_attestation<C: Config>(
 }
 
 pub fn get_attesting_indices<'a, C: Config>(
-    state: &'a BeaconState<C>,
+    state: &BeaconState<C>,
     attestation_data: &AttestationData,
-    bitlist: &'a BitList<C::MaxValidatorsPerCommittee>,
-) -> Result<BTreeSet<&'a ValidatorIndex>, Error> {
+    bitlist: &BitList<C::MaxValidatorsPerCommittee>,
+) -> Result<BTreeSet<ValidatorIndex>, Error> {
     let comittee = get_beacon_committee(state, attestation_data.slot, attestation_data.index);
     if comittee.is_err() {
         return Err(comittee.err().expect("Expected success"));
     }
-    let mut validators: BTreeSet<&ValidatorIndex> = BTreeSet::new();
+    let mut validators: BTreeSet<ValidatorIndex> = BTreeSet::new();
     for (i, v) in comittee
         .expect("Expected success getting committee")
-        .enumerate()
+        .into_iter().enumerate()
     {
         if bitlist.get(i).is_ok() {
             validators.insert(v);
