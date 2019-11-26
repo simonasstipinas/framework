@@ -213,7 +213,7 @@ mod tests {
             },
             crosslink: default_crosslink(),
             index: 0,
-            slot: 0
+            slot: 0,
         }
     }
 
