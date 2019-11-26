@@ -18,7 +18,7 @@ use types::{
     types::VoluntaryExit,
 };
 
-fn process_block<T: Config + ExpConst>(state: &mut BeaconState<T>, block: &BeaconBlock<T>) {
+pub fn process_block<T: Config + ExpConst>(state: &mut BeaconState<T>, block: &BeaconBlock<T>) {
     process_block_header(state, &block);
     process_randao(state, &block.body);
     process_eth1_data(state, &block.body);

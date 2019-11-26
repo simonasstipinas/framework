@@ -24,6 +24,14 @@ use types::{
     types::{Checkpoint, PendingAttestation, Validator},
 };
 
+pub fn process_epoch<T: Config + ExpConst>(state: &mut BeaconState<T>) {
+    process_justification_and_finalization(state);
+    process_rewards_and_penalties(state);
+    process_registry_updates(state);
+    process_slashings(state);
+    process_final_updates(state);
+}
+
 fn process_justification_and_finalization<T: Config + ExpConst>(
     state: &mut BeaconState<T>,
 ) -> Result<(), Error> {
