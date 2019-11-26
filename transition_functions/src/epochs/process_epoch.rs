@@ -24,6 +24,18 @@ use types::{
     types::{Checkpoint, PendingAttestation, Validator},
 };
 
+#[allow(dead_code)]
+fn process_epoch<T: Config + ExpConst>(
+    state: &mut BeaconState<T>
+) {
+    process_justification_and_finalization(state).unwrap();
+    process_rewards_and_penalties(state).unwrap();
+    process_registry_updates(state);
+    process_slashings(state);
+    process_final_updates(state);
+}
+
+
 fn process_justification_and_finalization<T: Config + ExpConst>(
     state: &mut BeaconState<T>,
 ) -> Result<(), Error> {
@@ -121,7 +133,7 @@ fn process_registry_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
         state.validators[index].activation_eligibility_epoch = state_copy.get_current_epoch();
     }
     for index in exiting {
-        initiate_validator_exit(state, index as u64);
+        initiate_validator_exit(state, index as u64).unwrap();
     }
 
     // Queue validators eligible for activation and not dequeued for activation prior to finalized epoch
@@ -159,8 +171,8 @@ fn process_rewards_and_penalties<T: Config + ExpConst>(
 
     let (rewards, penalties) = state.get_attestation_deltas();
     for index in 0..state.validators.len() {
-        increase_balance(state, index as ValidatorIndex, rewards[index]);
-        decrease_balance(state, index as ValidatorIndex, penalties[index]);
+        increase_balance(state, index as ValidatorIndex, rewards[index]).unwrap();
+        decrease_balance(state, index as ValidatorIndex, penalties[index]).unwrap();
     }
 
     Ok(())
@@ -194,9 +206,9 @@ fn process_final_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
     //# Update effective balances with hysteresis
     for (index, validator) in state.validators.iter_mut().enumerate() {
         let balance = state.balances[index];
-        let HALF_INCREMENT = T::effective_balance_increment() / 2;
+        let half_increment = T::effective_balance_increment() / 2;
         if balance < validator.effective_balance
-            || validator.effective_balance + 3 * HALF_INCREMENT < balance
+            || validator.effective_balance + 3 * half_increment < balance
         {
             validator.effective_balance = cmp::min(
                 balance - balance % T::effective_balance_increment(),
@@ -217,7 +229,7 @@ fn process_final_updates<T: Config + ExpConst>(state: &mut BeaconState<T>) {
         };
         state
             .historical_roots
-            .push(hash_tree_root(&historical_batch));
+            .push(hash_tree_root(&historical_batch)).unwrap();
     }
     //# Rotate current/previous epoch attestations
     state.previous_epoch_attestations = state.current_epoch_attestations.clone();
