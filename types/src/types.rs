@@ -90,7 +90,17 @@ pub struct BeaconBlockBody<C: Config> {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct BeaconBlockHeader {
     pub slot: Slot,
@@ -101,7 +111,18 @@ pub struct BeaconBlockHeader {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Default, Hash, Deserialize, Serialize, Encode, Decode, TreeHash, Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Default,
+    Hash,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    Copy,
 )]
 pub struct Checkpoint {
     pub epoch: Epoch,
@@ -144,7 +165,17 @@ pub struct Eth1Data {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct Fork {
     pub previous_version: Version,

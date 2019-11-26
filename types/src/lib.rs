@@ -3,4 +3,3 @@ pub mod config;
 pub mod consts;
 pub mod primitives;
 pub mod types;
-pub mod domain_type;
