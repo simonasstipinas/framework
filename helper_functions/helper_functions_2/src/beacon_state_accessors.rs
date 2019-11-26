@@ -1,8 +1,8 @@
 use crate::crypto::*;
 use crate::error::Error;
+use crate::math::*;
 use crate::misc::*;
 use crate::predicates::is_active_validator;
-use crate::math::*;
 use ethereum_types::H256;
 use ssz_types::{BitList, VariableList};
 use std::cmp::max;
@@ -117,14 +117,12 @@ pub fn get_seed<C: Config>(
         return Err(mix.err().expect("Should be error"));
     }
 
-    print!("epoch: {}", epoch);
     let epoch_bytes = int_to_bytes(epoch, 8);
     if epoch_bytes.is_err() {
         return Err(epoch_bytes.err().expect("Should be error"));
     }
 
-    let epoch_b = epoch_bytes.unwrap();
-    print!("epoch len: {}", epoch_b.len());
+    let epoch_b = epoch_bytes.expect("Expected valid conversion");
     let mut preimage: [u8; 32] = [0; 32];
     preimage[0..1]
         .copy_from_slice(&[u8::try_from(domain_type).expect("Expected successfull conversion")]);
@@ -271,7 +269,7 @@ pub fn get_indexed_attestation<C: Config>(
     Ok(att)
 }
 
-pub fn get_attesting_indices<'a, C: Config>(
+pub fn get_attesting_indices<C: Config>(
     state: &BeaconState<C>,
     attestation_data: &AttestationData,
     bitlist: &BitList<C::MaxValidatorsPerCommittee>,
@@ -283,7 +281,8 @@ pub fn get_attesting_indices<'a, C: Config>(
     let mut validators: BTreeSet<ValidatorIndex> = BTreeSet::new();
     for (i, v) in comittee
         .expect("Expected success getting committee")
-        .into_iter().enumerate()
+        .into_iter()
+        .enumerate()
     {
         if bitlist.get(i).is_ok() {
             validators.insert(v);

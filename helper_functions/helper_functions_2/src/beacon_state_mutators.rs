@@ -59,24 +59,19 @@ pub fn slash_validator<C: Config>(
     let effective_balance = validator.effective_balance;
     let slashings_index = usize::try_from(epoch % epochs_per_slashings)
         .expect("Conversion to usize for indexing would truncate the value of ValidatorIndex");
-    print!("ok");
     state.slashings[slashings_index] += effective_balance;
-    print!("ok1");
     let decr = validator.effective_balance / C::min_slashing_penalty_quotient();
     decrease_balance(state, slashed_index, decr)?;
 
-    print!("ok2");
     // Apply proposer and whistleblower rewards
     let proposer_index = accessors::get_beacon_proposer_index(state)?;
     let whistleblower_ind_val = match whistleblower_index {
         None => proposer_index,
         Some(i) => i,
     };
-    print!("ok3");
     let whistleblower_reward = effective_balance / C::whistleblower_reward_quotient();
     let proposer_reward = effective_balance / C::proposer_reward_quotient();
     increase_balance(state, proposer_index, proposer_reward)?;
-    print!("ok4");
     increase_balance(state, whistleblower_ind_val, whistleblower_reward)?;
     Ok(())
 }
@@ -134,50 +129,51 @@ pub fn initiate_validator_exit<C: Config>(
 mod tests {
     use super::*;
     use bls::{PublicKey, SecretKey};
-    use types::config::{MainnetConfig, MinimalConfig};
+    //use types::config::{MainnetConfig, MinimalConfig};
+    use types::config::MinimalConfig;
     use types::primitives::H256;
     use types::types::Validator;
 
-    const EPOCH_MAX: u64 = u64::max_value();
+    // const EPOCH_MAX: u64 = u64::max_value();
 
-    fn default_validator() -> Validator {
-        Validator {
-            effective_balance: 0,
-            slashed: false,
-            activation_eligibility_epoch: EPOCH_MAX,
-            activation_epoch: 0,
-            exit_epoch: EPOCH_MAX,
-            withdrawable_epoch: EPOCH_MAX,
-            withdrawal_credentials: H256([0; 32]),
-            pubkey: PublicKey::from_secret_key(&SecretKey::random()),
-        }
-    }
+    // fn default_validator() -> Validator {
+    //     Validator {
+    //         effective_balance: 0,
+    //         slashed: false,
+    //         activation_eligibility_epoch: EPOCH_MAX,
+    //         activation_epoch: 0,
+    //         exit_epoch: EPOCH_MAX,
+    //         withdrawable_epoch: EPOCH_MAX,
+    //         withdrawal_credentials: H256([0; 32]),
+    //         pubkey: PublicKey::from_secret_key(&SecretKey::random()),
+    //     }
+    // }
 
     mod slash_validator_tests {
-        use super::*;
+        //use super::*;
 
-        #[test]
-        fn test_exit_epoch() {
-            let mut state: BeaconState<MainnetConfig> = BeaconState::default();
-            state.slot = <MainnetConfig as Config>::SlotsPerEpoch::to_u64() * 3;
-            // Add validator and it's balance
-            state
-                .validators
-                .push(default_validator())
-                .expect("Expected successess");
-            state.balances.push(100).expect("Expected success");
+        // #[test]
+        // fn test_exit_epoch() {
+        //     let mut state: BeaconState<MainnetConfig> = BeaconState::default();
+        //     state.slot = <MainnetConfig as Config>::SlotsPerEpoch::to_u64() * 3;
+        //     // Add validator and it's balance
+        //     state
+        //         .validators
+        //         .push(default_validator())
+        //         .expect("Expected successess");
+        //     state.balances.push(100).expect("Expected success");
 
-            let mut state_copy = state.clone();
-            initiate_validator_exit(&mut state_copy, 0)
-                .expect("Expected successful initiate_validator_exit");
+        //     let mut state_copy = state.clone();
+        //     initiate_validator_exit(&mut state_copy, 0)
+        //         .expect("Expected successful initiate_validator_exit");
 
-            slash_validator(&mut state, 0, None).expect("slash_validator should succeed");
+        //     slash_validator(&mut state, 0, None).expect("slash_validator should succeed");
 
-            assert_eq!(
-                state_copy.validators[0].exit_epoch,
-                state.validators[0].exit_epoch
-            );
-        }
+        //     assert_eq!(
+        //         state_copy.validators[0].exit_epoch,
+        //         state.validators[0].exit_epoch
+        //     );
+        // }
     }
 
     #[test]
