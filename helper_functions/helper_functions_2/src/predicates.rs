@@ -82,6 +82,7 @@ pub fn validate_indexed_attestation<C: Config>(
         return Err(Error::IndicesExceedMaxValidators);
     }
 
+    // Index sets will always be disjoint if we get through the first `if`
     if has_common_elements(bit_0_indices, bit_1_indices) {
         return Err(Error::CustodyBitIndicesIntersect);
     }
@@ -106,14 +107,34 @@ pub fn validate_indexed_attestation<C: Config>(
 
     if indexed_attestation.signature.verify_multiple(
         &[&hash_1, &hash_2],
-        //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
-        accessors::get_domain(state, 0, Some(indexed_attestation.data.target.epoch)),
+        //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config) (now just passing it's value)
+        accessors::get_domain(state, 1, Some(indexed_attestation.data.target.epoch)),
         &[&aggr_pubkey1, &aggr_pubkey2],
     ) {
         Ok(())
     } else {
         Err(Error::InvalidSignature)
     }
+
+    // Check signature
+    // Since bit_1_indices is empty (because of the first `if`) we only check that
+    // let aggr_pubkey1 = aggregate_validator_public_keys(bit_0_indices, state)?;
+
+    // let hash_1 = AttestationDataAndCustodyBit {
+    //     data: indexed_attestation.data.clone(),
+    //     custody_bit: false,
+    // }
+    // .tree_hash_root();
+
+    // if indexed_attestation.signature.verify(
+    //     &hash_1,
+    //     accessors::get_domain(state, 0, Some(indexed_attestation.data.target.epoch)),
+    //     &aggr_pubkey1
+    // ) {
+    //     Ok(())
+    // } else {
+    //     Err(Error::InvalidSignature)
+    // }
 }
 
 pub fn is_valid_merkle_branch(
@@ -406,6 +427,7 @@ mod tests {
 
     mod validate_indexed_attestation_tests {
         use super::*;
+        use bls::{AggregateSignature, SecretKey, Signature};
         use types::config::MainnetConfig;
 
         #[test]
@@ -496,6 +518,81 @@ mod tests {
                 validate_indexed_attestation(&state, &attestation),
                 Err(Error::InvalidSignature)
             );
+        }
+
+        #[test]
+        fn valid_signature() {
+            let mut state: BeaconState<MainnetConfig> = BeaconState::default();
+            let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
+            attestation
+                .custody_bit_0_indices
+                .push(0)
+                .expect("Unable to add custody bit index");
+            attestation
+                .custody_bit_0_indices
+                .push(1)
+                .expect("Unable to add custody bit index");
+
+            let skey1 = SecretKey::random();
+            let pkey1 = PublicKey::from_secret_key(&skey1);
+            let v1 = Validator {
+                pubkey: pkey1,
+                ..default_validator()
+            };
+
+            let skey2 = SecretKey::random();
+            let pkey2 = PublicKey::from_secret_key(&skey2);
+            let v2 = Validator {
+                pubkey: pkey2,
+                ..default_validator()
+            };
+
+            state
+                .validators
+                .push(v1)
+                .expect("Expectected successfull push");
+            state
+                .validators
+                .push(v2)
+                .expect("Expectected successfull push");
+
+            attestation.data.beacon_block_root = H256([0xFF; 32]);
+
+            let digest1 = AttestationDataAndCustodyBit {
+                data: attestation.data.clone(),
+                custody_bit: false,
+            }
+            .tree_hash_root();
+
+            let sig1 = Signature::new(
+                digest1.as_slice(),
+                //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
+                accessors::get_domain(&state, 0, Some(attestation.data.target.epoch)),
+                &skey1,
+            );
+            let sig2 = Signature::new(
+                digest1.as_slice(),
+                //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
+                accessors::get_domain(&state, 0, Some(attestation.data.target.epoch)),
+                &skey2,
+            );
+
+            let mut asig = AggregateSignature::new();
+            asig.add(&sig1);
+            asig.add(&sig2);
+
+            attestation.signature = asig;
+
+            let aggr_pubkey =
+                aggregate_validator_public_keys(&attestation.custody_bit_0_indices, &state)
+                    .expect("Success");
+            assert!(attestation.signature.verify(
+                &digest1,
+                accessors::get_domain(&state, 0, Some(attestation.data.target.epoch)),
+                &aggr_pubkey,
+            ));
+
+            assert_eq!(validate_indexed_attestation(&state, &attestation), Ok(()));
         }
     }
 }
