@@ -47,7 +47,7 @@ fn process_voluntary_exit<T: Config + ExpConst>(state: &mut BeaconState<T>, exit
     )
     .unwrap());
     // Initiate exit
-    initiate_validator_exit(state, exit.validator_index);
+    initiate_validator_exit(state, exit.validator_index).unwrap();
 }
 
 fn process_deposit<T: Config + ExpConst>(state: &mut BeaconState<T>, deposit: &Deposit) {
@@ -72,7 +72,7 @@ fn process_deposit<T: Config + ExpConst>(state: &mut BeaconState<T>, deposit: &D
         // bls::PublicKeyBytes::from_bytes(&v.pubkey.as_bytes()).unwrap()
         if bls::PublicKeyBytes::from_bytes(&v.pubkey.as_bytes()).unwrap() == *pubkey {
             //# Increase balance by deposit amount
-            increase_balance(state, index as u64, *amount);
+            increase_balance(state, index as u64, *amount).unwrap();
             return;
         }
     }
@@ -105,7 +105,7 @@ fn process_deposit<T: Config + ExpConst>(state: &mut BeaconState<T>, deposit: &D
             T::max_effective_balance(),
         ),
         slashed: false,
-    });
+    }).unwrap();
     &state.balances.push(*amount);
 }
 
@@ -195,7 +195,7 @@ fn process_proposer_slashing<T: Config + ExpConst>(
         .unwrap());
     }
 
-    slash_validator(state, proposer_slashing.proposer_index);
+    slash_validator(state, proposer_slashing.proposer_index).unwrap();
 }
 
 fn process_attester_slashing<T: Config + ExpConst>(
@@ -233,7 +233,7 @@ fn process_attester_slashing<T: Config + ExpConst>(
         let validator = &state.validators[index as usize];
 
         if is_slashable_validator(&validator, get_current_epoch(state)) {
-            slash_validator(state, index);
+            slash_validator(state, index).unwrap();
             slashed_any = true;
         }
     }
@@ -285,10 +285,10 @@ fn process_attestation<T: Config + ExpConst>(
 
     if data.target.epoch == get_current_epoch(state) {
         assert_eq!(data.source, state.current_justified_checkpoint);
-        state.current_epoch_attestations.push(pending_attestation);
+        state.current_epoch_attestations.push(pending_attestation).unwrap();
     } else {
         assert_eq!(data.source, state.previous_justified_checkpoint);
-        state.previous_epoch_attestations.push(pending_attestation);
+        state.previous_epoch_attestations.push(pending_attestation).unwrap();
     }
 
     //# Check signature
@@ -300,7 +300,7 @@ fn process_attestation<T: Config + ExpConst>(
 }
 
 fn process_eth1_data<T: Config + ExpConst>(state: &mut BeaconState<T>, body: &BeaconBlockBody<T>) {
-    state.eth1_data_votes.push(body.eth1_data.clone());
+    state.eth1_data_votes.push(body.eth1_data.clone()).unwrap();
     let num_votes = state
         .eth1_data_votes
         .iter()
