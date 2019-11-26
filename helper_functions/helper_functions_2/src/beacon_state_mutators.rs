@@ -1,16 +1,16 @@
 use super::beacon_state_accessors as accessors;
 use super::error::Error;
-use std::cmp;
-use std::convert::TryFrom;
-use typenum::Unsigned;
-use types::config::Config;
-use types::primitives::{Epoch, Gwei, ValidatorIndex};
 use crate::beacon_state_accessors::get_current_epoch;
 use crate::beacon_state_accessors::get_validator_churn_limit;
 use crate::misc::compute_activation_exit_epoch;
+use std::cmp;
+use std::convert::TryFrom;
+use typenum::Unsigned;
 use types::beacon_state::BeaconState;
+use types::config::Config;
 use types::config::MainnetConfig;
 use types::consts::FAR_FUTURE_EPOCH;
+use types::primitives::{Epoch, Gwei, ValidatorIndex};
 
 pub fn increase_balance<C: Config>(
     state: &mut BeaconState<C>,
@@ -42,13 +42,12 @@ pub fn decrease_balance<C: Config>(
     Ok(())
 }
 
-
 pub fn slash_validator<C: Config>(
     state: &mut BeaconState<C>,
     slashed_index: ValidatorIndex,
     whistleblower_index: Option<ValidatorIndex>,
 ) -> Result<(), Error> {
-    let epoch: Epoch = accessors::get_current_epoch(state);
+    let epoch: Epoch = get_current_epoch(state);
     initiate_validator_exit(state, slashed_index)?;
     let sl_index = usize::try_from(slashed_index)
         .expect("Conversion to usize for indexing would truncate the value of ValidatorIndex");
@@ -114,7 +113,7 @@ pub fn initiate_validator_exit<C: Config>(
             exit_queue_churn += 1;
         }
     }
-    if exit_queue_churn >= get_validator_churn_limit(*state) {
+    if exit_queue_churn >= get_validator_churn_limit(state) {
         exit_queue_epoch += 1;
     }
 
@@ -133,7 +132,6 @@ mod tests {
     use types::config::{MainnetConfig, MinimalConfig};
     use types::primitives::H256;
     use types::types::Validator;
-
 
     const EPOCH_MAX: u64 = u64::max_value();
 

@@ -38,7 +38,7 @@ pub fn get_current_epoch<C: Config>(state: &BeaconState<C>) -> Epoch {
     crate::misc::compute_epoch_at_slot::<C>(state.slot)
 }
 
-pub fn get_validator_churn_limit<C: Config>(state: BeaconState<C>) -> u64 {
+pub fn get_validator_churn_limit<C: Config>(state: &BeaconState<C>) -> u64 {
     let active_validator_indices = get_active_validator_indices(&state, 8); // get_current_epoch
     let active_validator_count = active_validator_indices.len() as u64;
     max(MIN_PER_EPOCH_CHURN_LIMIT, active_validator_count) // CHURN_LIMIT_QUOTIENT
