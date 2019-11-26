@@ -104,7 +104,7 @@ where
                 get_attesting_indices(&self, &attestation.data, &attestation.aggregation_bits)
                     .unwrap();
             for index in indices {
-                if self.validators[*index as usize].slashed {
+                if !(self.validators[*index as usize].slashed) {
                     output.push(*index).unwrap();
                 }
             }
