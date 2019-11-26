@@ -4,13 +4,13 @@ use std::cmp::max;
 use types::beacon_state::BeaconState;
 use types::config::Config;
 use types::primitives::*;
-use crate::error::Error;
-use ssz_types::BitList;
-// use types::types::{Attestation, AttestationData, IndexedAttestation};
-use types::types::AttestationData;
+use ssz_types::{BitList, VariableList};
+use types::types::{Attestation, AttestationData, IndexedAttestation};
 use types::consts::*;
 use crate::misc::*;
-// use crate::crypto::*;
+use crate::crypto::*;
+use crate::error::Error;
+use std::collections::BTreeSet;
 
 pub fn get_current_epoch<C: Config>(_state: &BeaconState<C>) -> Epoch {
     compute_epoch_at_slot(_state.slot)
@@ -39,7 +39,12 @@ pub fn get_block_root_at_slot<C: Config>(
     if !(_slot < _state.slot && _state.slot <= _slot + SLOTS_PER_HISTORICAL_ROOT) {
         return Err(Error::SlotOutOfRange);
     }
+
     let index = (_slot % SLOTS_PER_HISTORICAL_ROOT) as usize;
+    if index >= _state.block_roots.len() {
+        return Err(Error::IndexOutOfRange);
+    }
+
     Ok(_state.block_roots[index])
 }
 
@@ -51,25 +56,37 @@ pub fn get_randao_mix<C: Config>(
     if index >= _state.randao_mixes.len() {
         return Err(Error::IndexOutOfRange);
     }
+
     Ok(_state.randao_mixes[index])
 }
+
 
 // pub fn get_active_validator_indices<C: Config>(
 //     _state: &BeaconState<C>,
 //     _epoch: Epoch,
 // ) -> impl Iterator<Item = &ValidatorIndex> {
-//     // let mut validators = Vec::<ValidatorIndex>::new();
-//     // let mut vals = iter::<&ValidatorIndex>();
-//     let mut vals = [].iter();
-//     for (i, v) in _state.validators.iter().enumerate() {
-//         if is_active_validator(v, _epoch) {
-//             // validators.push(i as ValidatorIndex);
-//             vals.chain(&[i as ValidatorIndex]);
-//         }
-//     }
-//     // validators.iter()
-//     vals
+//     [].iter()
 // }
+// pub fn get_active_validator_indices<C: Config>(
+//     _state: &BeaconState<C>,
+//     _epoch: Epoch,
+// ) -> impl Iterator<Item = &ValidatorIndex> {
+//     // // let mut validators = Vec::<ValidatorIndex>::new();
+//     // // let mut vals = iter::<&ValidatorIndex>();
+//     // let mut vals = [].iter();
+//     // for (i, v) in _state.validators.iter().enumerate() {
+//     //     if is_active_validator(v, _epoch) {
+//     //         // validators.push(i as ValidatorIndex);
+//     //         vals.chain(&[i as ValidatorIndex]);
+//     //     }
+//     // }
+//     // // validators.iter()
+//     // vals
+
+//     _state.validators.iter().copied().filter(|v| 
+//     (v, _epoch))
+// }
+
 pub fn get_active_validator_indices<C: Config>(
     _state: &BeaconState<C>,
     _epoch: Epoch,
@@ -89,39 +106,30 @@ pub fn get_validator_churn_limit<C: Config>(_state: BeaconState<C>) -> u64 {
     max(MIN_PER_EPOCH_CHURN_LIMIT, active_validator_count)
 }
 
+fn int_to_bytes(_int: u64, _length: usize) -> Result<Vec<u8>, Error> {
+    Ok([].to_vec())
+}
 pub fn get_seed<C: Config>(
     _state: &BeaconState<C>,
     _epoch: Epoch,
     _domain_type: DomainType,
 ) -> Result<H256, Error> {
-    Ok(H256::from([0; 32]))
+    let mix = get_randao_mix(&_state, _epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1);
+    if mix.is_err() {
+        return Err(mix.err().unwrap());
+    }
+
+    let epoch_bytes = int_to_bytes(_epoch, 8);
+    if epoch_bytes.is_err() {
+        return Err(epoch_bytes.err().unwrap());
+    }
+
+    let mut preimage: [u8; 32] = [0; 32];
+    preimage[0..1].copy_from_slice(&[_domain_type as u8]);
+    preimage[2..10].copy_from_slice(&(epoch_bytes.unwrap())[..]);
+    preimage[11..].copy_from_slice(&(mix.unwrap())[..]);
+    Ok(H256::from_slice(&hash(&preimage)))
 }
-// fn int_to_bytes(_int: u64, _length: usize) -> Result<Vec<u8>, Error> {
-//     Ok([].to_vec())
-// }
-// pub fn get_seed<C: Config>(
-//     _state: BeaconState<C>,
-//     _epoch: Epoch,
-//     _domain_type: DomainType,
-// ) -> Result<H256, Error> {
-//     let mix = get_randao_mix(&_state, _epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1); //  # Avoid underflow
-//     // // crate::crypto::hash(domain_type + crate::math::int_to_bytes(epoch) + mix)
-
-//     let epoch_bytes = int_to_bytes(_epoch, 32).unwrap();
-
-//     let mut preimage = [0; 32 * 3];
-//     preimage[0..1].copy_from_slice(&[_domain_type]);
-//     // preimage[0..32].copy_from_slice(&mix[..]);
-//     preimage[1..33].copy_from_slice(&mix[..]);
-//     // preimage[33..64].copy_from_slice(&active_index_root[..]);
-//     preimage[33..].copy_from_slice(&epoch_bytes[..]);
-
-//     // Ok(Hash256::from_slice(&hash(&preimage)))
-    
-//     // crate::crypto::hash(domain_type + int_to_bytes(epoch, 8) + mix)
-//     // // crate::crypto::hash(b"Hello World!!!".as_ref().into())
-//     Ok(H256::from(preimage))
-// }
 
 pub fn get_committee_count_at_slot<C: Config>(
     _state: &BeaconState<C>,
@@ -158,15 +166,20 @@ pub fn get_beacon_committee<'a, C: Config>(
     _index: u64,
 ) -> Result<impl Iterator<Item = &ValidatorIndex>, Error> {
     let epoch = compute_epoch_at_slot(_slot);
-    let committees_per_slot = get_committee_count_at_slot(_state, _slot).unwrap();
-    // let indices = get_active_validator_indices(_state, epoch).collect();
+    let committees_per_slot = get_committee_count_at_slot(_state, _slot);
+    if committees_per_slot.is_err() {
+        return Err(committees_per_slot.err().unwrap());
+    }
+
     let indices = &[];
-    let seed = get_seed(_state, epoch, DOMAIN_BEACON_ATTESTER);//.unwrap();
+    let seed = get_seed(_state, epoch, DOMAIN_BEACON_ATTESTER);
     if seed.is_err() {
         return Err(seed.err().unwrap());
     }
-    let index = (_slot % SLOTS_PER_EPOCH) * committees_per_slot + _index;
-    let count = committees_per_slot * SLOTS_PER_EPOCH;
+
+    let committees = committees_per_slot.unwrap();
+    let index = (_slot % SLOTS_PER_EPOCH) * committees + _index;
+    let count = committees * SLOTS_PER_EPOCH;
     compute_committee(
         indices,
         &seed.unwrap(),
@@ -187,6 +200,10 @@ pub fn get_beacon_proposer_index<C: Config>(
 ) -> Result<ValidatorIndex, Error> {
     let epoch = get_current_epoch(_state);
     let seed = get_seed(_state, epoch, DOMAIN_BEACON_PROPOSER);
+    if seed.is_err() {
+        return Err(seed.err().unwrap());
+    }
+
     let indices = get_active_validator_indices(_state, epoch);
     compute_proposer_index(_state, &indices, &seed.unwrap())
 }
@@ -233,37 +250,63 @@ pub fn get_domain<C: Config>(
     compute_domain(_domain_type, Some(&fork_version))
 }
 
-// pub fn get_indexed_attestation<C: Config>(
-//     _state: &BeaconState<C>,
-//     _attestation: &Attestation<C>,
-// ) -> Result<IndexedAttestation<C>, Error> {
-//     let attesting_indices = get_attesting_indices(_state, &(_attestation.data), &(_attestation.aggregation_bits));
+pub fn get_indexed_attestation<C: Config>(
+    _state: &BeaconState<C>,
+    _attestation: &Attestation<C>,
+) -> Result<IndexedAttestation<C>, Error> {
+    let custody_bit_0_indices = get_attesting_indices(_state, &(_attestation.data), &(_attestation.aggregation_bits));
+    if custody_bit_0_indices.is_err() {
+        return Err(custody_bit_0_indices.err().unwrap());
+    }
 
-//     let attestation = IndexedAttestation(
-//         attesting_indices=attesting_indices,
-//         data=_attestation.data,
-//         signature=_attestation.signature,
-//     );
-//     Ok(attestation)
-//     // Err(Error::IndexOutOfRange)
-// }
+    let custody_bit_1_indices = get_attesting_indices(_state, &(_attestation.data), &(_attestation.custody_bits));
+    if custody_bit_1_indices.is_err() {
+        return Err(custody_bit_1_indices.err().unwrap());
+    }
+
+    let custody_bit_0_indices_list = VariableList::new(custody_bit_0_indices.unwrap()
+        .into_iter()
+        .map(|x| *x as u64)
+        .collect(),
+    );
+    if custody_bit_0_indices_list.is_err() {
+        return Err(Error::IndexOutOfRange);
+    }
+
+    let custody_bit_1_indices_list = VariableList::new(custody_bit_1_indices.unwrap()
+        .into_iter()
+        .map(|x| *x as u64)
+        .collect(),
+    );
+    if custody_bit_1_indices_list.is_err() {
+        return Err(Error::IndexOutOfRange);
+    }
+
+    let attestation = IndexedAttestation {
+        custody_bit_0_indices: custody_bit_0_indices_list.unwrap(),
+        custody_bit_1_indices: custody_bit_1_indices_list.unwrap(),
+        data: _attestation.data.clone(),
+        signature: _attestation.signature.clone(),
+    };
+    Ok(attestation)
+}
 
 pub fn get_attesting_indices<'a, C: Config>(
     _state: &'a BeaconState<C>,
     _attestation_data: &AttestationData,
-    _bitlist: &BitList<C::MaxValidatorsPerCommittee>,
-) -> Result<impl Iterator<Item = &'a ValidatorIndex>, Error> {
-    let comittee = get_beacon_committee(_state, _attestation_data.slot, _attestation_data.index);//.unwrap();
-    // let mut validators = Vec::<ValidatorIndex>::new();
-    // for (i, v) in comittee.enumerate() {
-    //     if (*_bitlist.cloned()).into_bytes().contains(&(*v as u8)) {
-    //         validators.push(*v);
-    //     }
-    // }
-    // Ok(validators.iter())
-    // set(index for i, index in enumerate(committee) if bits[i])
-    // Ok([].iter())
-    comittee
+    _bitlist: &'a BitList<C::MaxValidatorsPerCommittee>,
+) -> Result<BTreeSet<&'a ValidatorIndex>, Error> {
+    let comittee = get_beacon_committee(_state, _attestation_data.slot, _attestation_data.index);
+    if comittee.is_err() {
+        return Err(comittee.err().unwrap());
+    }
+    let mut validators: BTreeSet<&ValidatorIndex> = BTreeSet::new();
+    for (i, v) in comittee.unwrap().enumerate() {
+        if _bitlist.get(i).is_ok() {
+            validators.insert(v);
+        }
+    }
+    Ok(validators)
 }
 
 
