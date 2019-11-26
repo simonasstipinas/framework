@@ -16,7 +16,7 @@ use ethereum_types::H256 as Hash256;
 #[derive(Debug, PartialEq)]
 pub enum Error {}
 
-fn state_transition<T: Config + ExpConst>(state: &mut  BeaconState<T>, block: &BeaconBlock<T>, validate_state_root: bool=False) -> BeaconState{
+fn state_transition<T: Config + ExpConst>(state: &mut  BeaconState<T>, block: &BeaconBlock<T>, validate_state_root: bool) -> BeaconState<T>{
     //# Process slots (including those with no blocks) since block
     process_slots(state, block.slot);
     //# Process block
@@ -26,7 +26,7 @@ fn state_transition<T: Config + ExpConst>(state: &mut  BeaconState<T>, block: &B
         assert!(block.state_root == hash_tree_root(state));
     }
     //# Return post-state
-    return state;
+    return state.clone();
 }
 
 
@@ -48,7 +48,7 @@ fn process_slot<T: Config + ExpConst>(state: &mut BeaconState<T>){
 
     state.state_roots[(state.slot as usize) % (T::slots_per_historical_root() as usize)] = previous_state_root;
     // Cache latest block header state root
-    if state.latest_block_header.state_root == [u8; 32]{
+    if state.latest_block_header.state_root == H256::from([0 as u8; 32]){
         state.latest_block_header.state_root = previous_state_root;
     }
     // Cache block root
@@ -106,7 +106,7 @@ mod process_slot_tests {
             ..BeaconState::default()
         };
 
-        process_slot(&mut bs, 0);
+        process_slot(&mut bs);
 
         assert_eq!(bs.slot, 1);
     }
@@ -117,7 +117,7 @@ mod process_slot_tests {
             ..BeaconState::default()
         };
 
-        process_slot(&mut bs, 0);
+        process_slot(&mut bs);
 
         assert_eq!(bs.slot, 4);
     }
