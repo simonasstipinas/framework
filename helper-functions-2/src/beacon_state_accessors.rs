@@ -94,7 +94,7 @@ pub fn get_active_validator_indices<C: Config>(
     let mut validators = Vec::<ValidatorIndex>::new();
     for (i, v) in _state.validators.iter().enumerate() {
         if is_active_validator(v, _epoch) {
-            validators.push(i as ValidatorIndex)
+            validators.push(i as ValidatorIndex);
         }
     }
     validators
@@ -353,8 +353,18 @@ mod tests {
 
     #[test]
     fn test_get_randao_mix() {
-        let state = BeaconState::<MinimalConfig>::default();
+        let mut state = BeaconState::<MinimalConfig>::default();
+        let base: Vec<H256> = vec![H256::from([0; 32])];
+        let mixes: FixedVector<_, typenum::U64> = FixedVector::from(base.clone());
+        state.randao_mixes = mixes;
         let result = get_randao_mix::<MinimalConfig>(&state, 0);
-        assert_eq!(result.is_ok(), false);
+        assert_eq!(result.is_ok(), true);
+    }
+
+    #[test]
+    fn test_get_validator_churn_limit() {
+        let state = BeaconState::<MinimalConfig>::default();
+        let result = get_validator_churn_limit::<MinimalConfig>(state);
+        assert_eq!(result, MIN_PER_EPOCH_CHURN_LIMIT);
     }
 }

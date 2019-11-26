@@ -1,7 +1,7 @@
 pub enum DomainType {
-    DOMAIN_BEACON_PROPOSER,
-    DOMAIN_BEACON_ATTESTER,
-    DOMAIN_RANDAO,
-    DOMAIN_DEPOSIT,
-    DOMAIN_VOLUNTARY_EXIT,
+    DomainBeaconProposer,
+    DomainBeaconAttester,
+    DomainRandao,
+    DomainDeposit,
+    DomainVoluntaryExit,
 }
