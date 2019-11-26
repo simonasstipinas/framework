@@ -24,8 +24,19 @@ pub fn compute_activation_exit_epoch<C: Config>(epoch: Epoch) -> Epoch {
     epoch + 1 + MainnetConfig::min_seed_lookahead()
 }
 
-pub fn compute_domain(domain_type: DomainType, _fork_version: Option<&Version>) -> Domain {
-    u64::from(domain_type)
+pub fn compute_domain(domain_type: DomainType, fork_version: Option<&Version>) -> Domain {
+    let domain_type_bytes = int_to_bytes(u64::try_from(domain_type).expect(""), 4).expect("");
+    let mut domain_bytes = [0, 0, 0, 0, 0, 0, 0, 0];
+    for i in 0..4 {
+        domain_bytes[i] = domain_type_bytes[i];
+        match fork_version {
+            Some(f) => {
+                domain_bytes[i + 4] = f[i];
+            }
+            None => return bytes_to_int(&domain_bytes).expect(""),
+        }
+    }
+    bytes_to_int(&domain_bytes).expect("")
 }
 
 pub fn compute_shuffled_index<C: Config>(
@@ -59,14 +70,6 @@ pub fn compute_shuffled_index<C: Config>(
         let flip = (pivot + index_count - ind) % index_count;
         // compute position
         let position = if index > flip { ind } else { flip };
-        /*
-        let position;
-        if index > flip {
-            position = ind;
-        } else {
-            position = flip;
-        }
-        */
         // compute source
         let addition_to_sum: Vec<u8> = int_to_bytes(position / 256, 4).expect("");
         let iter = addition_to_sum.iter();
@@ -83,12 +86,6 @@ pub fn compute_shuffled_index<C: Config>(
         } else {
             (byte / divisor) % 2
         };
-        /*
-        let mut bit = 0;
-        if divisor != 0 {
-            bit = (byte / divisor) % 2;
-        }
-        */
         // flip or not?
         if bit == 1 {
             ind = flip;
@@ -192,16 +189,11 @@ mod tests {
     }
 
     #[test]
-    // fn test_compute_domain() {
-    //     assert_eq!(
-    //         compute_domain([1, 2, 3, 4], Some(&[5, 6, 7, 8])),
-    //         [1, 2, 3, 4, 5, 6, 7, 8]
-    //     );
-    //     assert_ne!(
-    //         compute_domain([1, 2, 3, 4], Some(&[5, 6, 7, 8])),
-    //         [8, 2, 3, 4, 5, 6, 7, 8]
-    //     );
-    // }
+    fn test_compute_domain() {
+        let domain: Domain = compute_domain(1, Some(&[0, 0, 0, 1]));
+        assert_eq!(domain, 0x0001_0000_0001);
+        // 1 * 256 ^ 4 + 1 = 4294967297 = 0x0001_0000_0001
+    }
     #[test]
     fn test_compute_shuffled_index() {
         let test_indices_length = 25;
