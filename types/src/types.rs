@@ -88,7 +88,17 @@ pub struct BeaconBlockBody<C: Config> {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct BeaconBlockHeader {
     pub slot: Slot,
@@ -142,7 +152,17 @@ pub struct Eth1Data {
 }
 
 #[derive(
-    Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Deserialize,
+    Serialize,
+    Encode,
+    Decode,
+    TreeHash,
+    SignedRoot,
+    Default,
 )]
 pub struct Fork {
     pub previous_version: Version,
@@ -174,6 +194,7 @@ pub struct PendingAttestation<C: Config> {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash)]
+
 pub struct ProposerSlashing {
     pub proposer_index: u64,
     pub header_1: BeaconBlockHeader,

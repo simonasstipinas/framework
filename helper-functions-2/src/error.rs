@@ -9,4 +9,5 @@ pub enum Error {
     InvalidSignature,
     NumberExceedsCapacity,
     ArrayIsEmpty,
+    NotAHash,
 }
