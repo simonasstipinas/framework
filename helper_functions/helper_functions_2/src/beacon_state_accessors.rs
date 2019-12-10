@@ -109,6 +109,18 @@ pub fn get_seed<C: Config>(
     epoch: Epoch,
     domain_type: DomainType,
 ) -> Result<H256, Error> {
+    let domain_bytes = int_to_bytes(domain_type.into(), 8);
+    if domain_bytes.is_err() {
+        return Err(domain_bytes.err().expect("Should be error"));
+    }
+    let domain_b = domain_bytes.expect("Expected valid conversion");
+
+    let epoch_bytes = int_to_bytes(epoch, 8);
+    if epoch_bytes.is_err() {
+        return Err(epoch_bytes.err().expect("Should be error"));
+    }
+    let epoch_b = epoch_bytes.expect("Expected valid conversion");
+
     let mix = get_randao_mix(
         state,
         epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1,
@@ -117,18 +129,12 @@ pub fn get_seed<C: Config>(
         return Err(mix.err().expect("Should be error"));
     }
 
-    let epoch_bytes = int_to_bytes(epoch, 8);
-    if epoch_bytes.is_err() {
-        return Err(epoch_bytes.err().expect("Should be error"));
-    }
+    let mut seed: [u8; 48] = [0; 48];
+    seed[0..8].copy_from_slice(&domain_b[..]);
+    seed[8..16].copy_from_slice(&epoch_b[..]);
+    seed[16..48].copy_from_slice(&(mix.expect("Expected success"))[..]);
 
-    let epoch_b = epoch_bytes.expect("Expected valid conversion");
-    let mut preimage: [u8; 32] = [0; 32];
-    preimage[0..1]
-        .copy_from_slice(&[u8::try_from(domain_type).expect("Expected successfull conversion")]);
-    preimage[2..10].copy_from_slice(&epoch_b[..]);
-    preimage[11..].copy_from_slice(&(mix.expect("Expected success"))[..]);
-    Ok(H256::from_slice(&hash(&preimage)))
+    Ok(H256::from_slice(&hash(&seed)))
 }
 
 pub fn get_committee_count_at_slot<C: Config>(
