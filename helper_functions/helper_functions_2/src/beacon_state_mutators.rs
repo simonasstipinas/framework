@@ -113,7 +113,7 @@ pub fn initiate_validator_exit<C: Config>(
             exit_queue_churn += 1;
         }
     }
-    if exit_queue_churn >= get_validator_churn_limit(state) {
+    if exit_queue_churn >= get_validator_churn_limit(state).expect("Expected success") {
         exit_queue_epoch += 1;
     }
 
