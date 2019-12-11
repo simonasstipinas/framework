@@ -22,10 +22,7 @@ pub fn xor_str(bytes_1: &str, bytes_2: &str) -> String {
     string_to_return
 }
 
-pub fn xor(bytes_1: &[u8], bytes_2: &[u8]) -> Result<Vec<u8>, Error> {
-    if bytes_1.len() != 32 || bytes_2.len() != 32 {
-        return Err(Error::NotAHash);
-    }
+pub fn xor(bytes_1: &[u8; 32], bytes_2: &[u8; 32]) -> Vec<u8> {
     let mut vec_to_return: Vec<u8> = Vec::new();
     for i in 0..32 {
         if bytes_1[i] == bytes_2[i] {
@@ -34,7 +31,7 @@ pub fn xor(bytes_1: &[u8], bytes_2: &[u8]) -> Result<Vec<u8>, Error> {
             vec_to_return.push(1);
         }
     }
-    Ok(vec_to_return)
+    vec_to_return
 }
 
 pub fn integer_squareroot(n: u64) -> u64 {
@@ -138,17 +135,17 @@ mod tests {
             0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0,
             0, 1, 1,
         ];
-        let vec_1: Vec<u8> = vec![
+        let vec_1: [u8; 32] = [
             255, 255, 1, 2, 254, 254, 3, 4, 253, 253, 5, 6, 252, 252, 7, 8, 251, 251, 9, 10, 250,
             250, 11, 12, 249, 249, 13, 14, 248, 248, 15, 16,
         ];
-        let vec_2: Vec<u8> = vec![
+        let vec_2: [u8; 32] = [
             255, 255, 10, 20, 254, 254, 30, 40, 253, 253, 50, 60, 252, 252, 70, 80, 251, 251, 90,
             100, 250, 250, 110, 120, 249, 249, 130, 140, 248, 248, 150, 160,
         ];
         assert_eq!(
             expected_vec,
-            xor(vec_1.as_slice(), vec_2.as_slice()).expect("")
+            xor(&vec_1, &vec_2)
         );
     }
 
