@@ -157,6 +157,54 @@ mod tests {
     }
 
     #[test]
+    fn test_verify_multiple() {
+        let domain: u64 = 45;
+        let msg_1: Vec<u8> = vec![111; 32];
+        let msg_2: Vec<u8> = vec![222; 32];
+
+        // To form first AggregatePublicKey (and sign messages)
+        let mut aggregate_signature = AggregateSignature::new();
+        let sk1 = SecretKey::random();
+        let pk1 = PublicKey::from_secret_key(&sk1);
+        aggregate_signature.add(&Signature::new(&msg_1, domain, &sk1));
+        let sk2 = SecretKey::random();
+        let pk2 = PublicKey::from_secret_key(&sk2);
+        aggregate_signature.add(&Signature::new(&msg_1, domain, &sk2));
+        let mut apk1 = AggregatePublicKey::new();
+        apk1.add(&pk1);
+        apk1.add(&pk2);
+        // Verify with one AggregateSignature and Message (same functionality as AggregateSignature::verify())
+        let apk1_bytes = PublicKeyBytes::from_bytes(apk1.as_raw().as_bytes().as_slice())
+            .expect("Unexpected error");
+        let sig_bytes = SignatureBytes::from_bytes(aggregate_signature.as_bytes().as_slice())
+            .expect("Unexpected error");
+        assert!(
+            bls_verify_multiple(&[&apk1_bytes], &[msg_1.as_slice()], &sig_bytes, domain)
+                .expect("Unexpected error")
+        );
+
+        let sk3 = SecretKey::random();
+        let pk3 = PublicKey::from_secret_key(&sk3);
+        aggregate_signature.add(&Signature::new(&msg_2, domain, &sk3));
+        let sk4 = SecretKey::random();
+        let pk4 = PublicKey::from_secret_key(&sk4);
+        aggregate_signature.add(&Signature::new(&msg_2, domain, &sk4));
+        let apk2 = bls_aggregate_pubkeys(&[pk3, pk4]);
+
+        let apk2_bytes = PublicKeyBytes::from_bytes(apk2.as_raw().as_bytes().as_slice())
+            .expect("Unexpected error");
+        let sig_bytes = SignatureBytes::from_bytes(aggregate_signature.as_bytes().as_slice())
+            .expect("Unexpected error");
+        assert!(bls_verify_multiple(
+            &[&apk1_bytes, &apk2_bytes],
+            &[msg_1.as_slice(), msg_2.as_slice()],
+            &sig_bytes,
+            domain
+        )
+        .expect("Unexpected error"));
+    }
+
+    #[test]
     fn test_bls_verify_invalid_sig() {
         // Create a valid public key first
         let sk_bytes: [u8; 48] = [
