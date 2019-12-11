@@ -101,7 +101,10 @@ pub fn get_active_validator_indices<C: Config>(
 pub fn get_validator_churn_limit<C: Config>(state: &BeaconState<C>) -> Result<u64, Error> {
     let active_validator_indices = get_active_validator_indices(state, get_current_epoch(state));
     let active_validator_count = active_validator_indices.len() as u64;
-    Ok(max(MIN_PER_EPOCH_CHURN_LIMIT, active_validator_count / CHURN_LIMIT_QUOTIENT))
+    Ok(max(
+        MIN_PER_EPOCH_CHURN_LIMIT,
+        active_validator_count / CHURN_LIMIT_QUOTIENT,
+    ))
 }
 
 pub fn get_seed<C: Config>(
@@ -350,7 +353,10 @@ mod tests {
     fn test_get_validator_churn_limit() {
         let state = BeaconState::<MinimalConfig>::default();
         let result = get_validator_churn_limit::<MinimalConfig>(&state);
-        assert_eq!(result.expect("Expected MIN_PER_EPOCH_CHURN_LIMIT"), MIN_PER_EPOCH_CHURN_LIMIT);
+        assert_eq!(
+            result.expect("Expected MIN_PER_EPOCH_CHURN_LIMIT"),
+            MIN_PER_EPOCH_CHURN_LIMIT
+        );
     }
 
     #[test]

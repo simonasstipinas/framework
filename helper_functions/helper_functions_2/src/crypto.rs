@@ -5,6 +5,8 @@ use bls::{
 use ring::digest::{digest, SHA256};
 use ssz::DecodeError;
 use std::convert::TryInto;
+use tree_hash::{SignedRoot, TreeHash};
+use types::primitives::H256;
 
 pub fn hash(input: &[u8]) -> Vec<u8> {
     digest(&SHA256, input).as_ref().into()
@@ -47,11 +49,22 @@ pub fn bls_aggregate_pubkeys(pubkeys: &[PublicKey]) -> AggregatePublicKey {
     aggr_pk
 }
 
+pub fn hash_tree_root<T: TreeHash>(object: &T) -> H256 {
+    let hash = object.tree_hash_root();
+    H256::from_slice(hash.as_slice())
+}
+
+pub fn signed_root<T: SignedRoot>(object: &T) -> H256 {
+    let hash = object.signed_root();
+    H256::from_slice(hash.as_slice())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use bls::SecretKey;
     use rustc_hex::FromHex;
+    use types::types::AttestationData;
 
     #[test]
     fn test_hash() {
@@ -162,5 +175,21 @@ mod tests {
         // Different domain
         let err = DecodeError::BytesInvalid(format!("Invalid Signature bytes: {:?}", sg_bytes));
         assert_eq!(bls_verify(&pk_bytes, b"aaabbb", &sg_bytes, 1), Err(err));
+    }
+
+    #[test]
+    fn test_hash_tree_root() {
+        let obj = AttestationData::default();
+        let hash: H256 = H256::from_slice(obj.tree_hash_root().as_slice());
+        let hash2 = hash_tree_root(&obj);
+        assert_eq!(hash, hash2);
+    }
+
+    #[test]
+    fn test_signing_root() {
+        let obj = AttestationData::default();
+        let hash: H256 = H256::from_slice(obj.signed_root().as_slice());
+        let hash2 = signed_root(&obj);
+        assert_eq!(hash, hash2);
     }
 }
