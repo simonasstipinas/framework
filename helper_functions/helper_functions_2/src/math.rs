@@ -25,11 +25,7 @@ pub fn xor_str(bytes_1: &str, bytes_2: &str) -> String {
 pub fn xor(bytes_1: &[u8; 32], bytes_2: &[u8; 32]) -> Vec<u8> {
     let mut vec_to_return: Vec<u8> = Vec::new();
     for i in 0..32 {
-        if bytes_1[i] == bytes_2[i] {
-            vec_to_return.push(0);
-        } else {
-            vec_to_return.push(1);
-        }
+        vec_to_return.push(bytes_1[i] ^ bytes_2[i]);
     }
     vec_to_return
 }
@@ -92,6 +88,7 @@ pub fn bytes_to_int(bytes: &[u8]) -> Result<u64, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ethereum_types::U256;
 
     #[test]
     fn test_xor_str() {
@@ -131,22 +128,23 @@ mod tests {
 
     #[test]
     fn test_xor() {
-        let expected_vec: Vec<u8> = vec![
-            0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0,
-            0, 1, 1,
-        ];
-        let vec_1: [u8; 32] = [
+        // let expected_vec: Vec<u8> = vec![
+        //     0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0,
+        //     0, 1, 1,
+        // ];
+        let v1: [u8; 32] = [
             255, 255, 1, 2, 254, 254, 3, 4, 253, 253, 5, 6, 252, 252, 7, 8, 251, 251, 9, 10, 250,
             250, 11, 12, 249, 249, 13, 14, 248, 248, 15, 16,
         ];
-        let vec_2: [u8; 32] = [
+        let v2: [u8; 32] = [
             255, 255, 10, 20, 254, 254, 30, 40, 253, 253, 50, 60, 252, 252, 70, 80, 251, 251, 90,
             100, 250, 250, 110, 120, 249, 249, 130, 140, 248, 248, 150, 160,
         ];
-        assert_eq!(
-            expected_vec,
-            xor(&vec_1, &vec_2)
-        );
+
+        let v1_int = U256::from(v1);
+        let v2_int = U256::from(v2);
+        let expected = v1_int ^ v2_int;
+        assert_eq!(expected, U256::from(xor(&v1, &v2).as_slice()));
     }
 
     #[test]
