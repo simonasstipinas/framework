@@ -16,7 +16,7 @@ use crate::primitives::*;
 pub struct Attestation<C: Config> {
     pub aggregation_bits: BitList<C::MaxValidatorsPerCommittee>,
     pub data: AttestationData,
-    pub custody_bits: BitList<C::MaxValidatorsPerCommittee>,
+    #[signed_root(skip_hashing)]
     pub signature: AggregateSignature,
 }
 
@@ -40,7 +40,6 @@ pub struct AttestationData {
     pub beacon_block_root: H256,
     pub source: Checkpoint,
     pub target: Checkpoint,
-    pub crosslink: Crosslink,
 }
 
 #[derive(
@@ -115,7 +114,6 @@ pub struct BeaconBlockBody<C: Config> {
     pub attestations: VariableList<Attestation<C>, C::MaxAttestations>,
     pub deposits: VariableList<Deposit, C::MaxDeposits>,
     pub voluntary_exits: VariableList<VoluntaryExit, C::MaxVoluntaryExits>,
-    pub transfers: VariableList<Transfer, C::MaxTransfers>,
 }
 
 impl<C: Config> Default for BeaconBlockBody<C> {
@@ -130,7 +128,6 @@ impl<C: Config> Default for BeaconBlockBody<C> {
             attestations: Default::default(),
             deposits: Default::default(),
             voluntary_exits: Default::default(),
-            transfers: Default::default(),
         }
     }
 }
@@ -152,6 +149,7 @@ pub struct BeaconBlockHeader {
     pub parent_root: H256,
     pub state_root: H256,
     pub body_root: H256,
+    #[signed_root(skip_hashing)]
     pub signature: Signature,
 }
 
@@ -246,8 +244,7 @@ pub struct HistoricalBatch<C: Config> {
     Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode, TreeHash, SignedRoot, Default,
 )]
 pub struct IndexedAttestation<C: Config> {
-    pub custody_bit_0_indices: VariableList<u64, C::MaxValidatorsPerCommittee>,
-    pub custody_bit_1_indices: VariableList<u64, C::MaxValidatorsPerCommittee>,
+    pub attesting_indices: VariableList<u64, C::MaxValidatorsPerCommittee>,
     pub data: AttestationData,
     #[signed_root(skip_hashing)]
     pub signature: AggregateSignature,

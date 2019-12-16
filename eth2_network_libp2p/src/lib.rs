@@ -399,11 +399,17 @@ impl<C: Config, N: Networked<C>> EventHandler<C, N> {
                 ))
             }
             RPCErrorResponse::Success(RPCResponse::BlocksByRange(bytes)) => {
+                info!(
+                    "received BlocksByRange response chunk (peer_id: {}, bytes: {})",
+                    peer_id,
+                    Hs(bytes.as_slice()),
+                );
+
                 let beacon_block =
                     BeaconBlock::from_ssz_bytes(bytes.as_slice()).map_err(DebugAsError::new)?;
 
                 info!(
-                    "received BlocksByRange response chunk (peer_id: {}, beacon_block: {:?})",
+                    "decoded BlocksByRange response chunk (peer_id: {}, beacon_block: {:?})",
                     peer_id, beacon_block,
                 );
 
@@ -477,20 +483,27 @@ impl<C: Config, N: Networked<C>> EventHandler<C, N> {
     ) -> Result<EventFuture> {
         match message {
             PubsubMessage::Block(bytes) => {
+                info!("received beacon block as gossip: {}", Hs(bytes.as_slice()));
+
                 let beacon_block =
                     BeaconBlock::from_ssz_bytes(bytes.as_slice()).map_err(DebugAsError::new)?;
 
-                info!("received beacon block as gossip: {:?}", beacon_block);
+                info!("decoded gossiped beacon block: {:?}", beacon_block);
 
                 Ok(Box::new(self.lock_networked().and_then(|mut networked| {
                     networked.accept_beacon_block(beacon_block)
                 })))
             }
             PubsubMessage::Attestation(bytes) => {
+                info!(
+                    "received beacon attestation as gossip: {}",
+                    Hs(bytes.as_slice()),
+                );
+
                 let attestation =
                     Attestation::from_ssz_bytes(bytes.as_slice()).map_err(DebugAsError::new)?;
 
-                info!("received beacon attestation as gossip: {:?}", attestation);
+                info!("decoded gossiped beacon attestation: {:?}", attestation);
 
                 Ok(Box::new(self.lock_networked().and_then(|mut networked| {
                     networked.accept_beacon_attestation(attestation)

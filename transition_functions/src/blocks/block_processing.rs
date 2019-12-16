@@ -214,15 +214,13 @@ fn process_attester_slashing<T: Config + ExpConst>(
 
     // Turns attesting_indices into a binary tree set. It's a set and it's ordered :)
     let attesting_indices_1 = attestation_1
-        .custody_bit_0_indices
+        .attesting_indices
         .iter()
-        .chain(&attestation_1.custody_bit_1_indices)
         .cloned()
         .collect::<BTreeSet<_>>();
     let attesting_indices_2 = attestation_2
-        .custody_bit_0_indices
+        .attesting_indices
         .iter()
-        .chain(&attestation_2.custody_bit_1_indices)
         .cloned()
         .collect::<BTreeSet<_>>();
 
@@ -269,11 +267,7 @@ fn process_attestation<T: Config + ExpConst>(
     );
 
     let committee = get_beacon_committee(state, attestation_slot, index).unwrap();
-    assert_eq!(
-        attestation.aggregation_bits.len(),
-        attestation.custody_bits.len()
-    );
-    assert_eq!(attestation.custody_bits.len(), committee.len());
+    assert_eq!(attestation.aggregation_bits.len(), committee.len());
 
     let pending_attestation = PendingAttestation {
         data: attestation.data.clone(),
