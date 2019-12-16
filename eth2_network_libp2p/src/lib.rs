@@ -77,8 +77,6 @@ enum EventHandlerError {
         topics: Vec<TopicHash>,
         message: PubsubMessage,
     },
-    #[error("unexpectedly subscribed to peer {peer_id} for topic {topic}")]
-    UnexpectedTopicSubscription { peer_id: PeerId, topic: TopicHash },
     #[error("slot step is zero")]
     SlotStepIsZero,
     #[error("slot difference overflowed ({count} * {step})")]
@@ -169,7 +167,8 @@ impl<C: Config, N: Networked<C>> EventHandler<C, N> {
                 message,
             } => self.handle_pubsub_message(id, source, topics, message),
             Libp2pEvent::PeerSubscribed(peer_id, topic) => {
-                bail!(EventHandlerError::UnexpectedTopicSubscription { peer_id, topic });
+                info!("subscribed to peer {} for topic {}", peer_id, topic);
+                Ok(Box::new(future::ok(())))
             }
         }
     }
