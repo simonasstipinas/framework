@@ -103,6 +103,8 @@ enum Gossip<C: Config> {
 
 pub struct Sender<C: Config>(UnboundedSender<Gossip<C>>);
 
+// The implementation of `<EventHandler<C, N> as Future>::poll` relies on `UnboundedReceiver` not
+// panicking if it is polled after being exhausted.
 pub struct Receiver<C: Config>(UnboundedReceiver<Gossip<C>>);
 
 impl<C: Config> Network<C> for Sender<C> {
@@ -529,7 +531,7 @@ impl<C: Config, N: Networked<C>> EventHandler<C, N> {
 // ```
 // let handle_events = service.for_each(|libp2p_event| …);
 // let publish_gossip = self.networked_receiver.0.for_each(|gossip| …);
-// handle_events.select(publish_gossip)
+// handle_events.join(publish_gossip)
 // ```
 impl<C: Config, N: Networked<C>> Future for EventHandler<C, N> {
     type Item = ();
@@ -556,6 +558,10 @@ impl<C: Config, N: Networked<C>> Future for EventHandler<C, N> {
         }
 
         // Publish all `Gossip`s received through `networked_receiver`.
+        //
+        // This will keep polling the `UnboundedReceiver` after it has been exhausted.
+        // `UnboundedReceiver` does not panic in that scenario, so there is no need to use
+        // `Stream::fuse`.
         let swarm = &mut try_ready!(self.lock_service().poll()).swarm;
         while let Some(gossip) = try_ready!(self
             .networked_receiver
@@ -577,7 +583,7 @@ impl<C: Config, N: Networked<C>> Future for EventHandler<C, N> {
             }
         }
 
-        Ok(Async::Ready(()))
+        Ok(Async::NotReady)
     }
 }
 
