@@ -247,7 +247,7 @@ dependencies = [
 [[package]]
 name = "bls"
 version = "0.1.0"
-source = "git+https://github.com/sigp/lighthouse#c04026d073d12a98499c9cebd6d6134fc75355a9"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "eth2_hashing 0.1.1 (git+https://github.com/sigp/lighthouse)",
  "eth2_ssz 0.1.2 (git+https://github.com/sigp/lighthouse)",
@@ -686,7 +686,7 @@ dependencies = [
 [[package]]
 name = "eth2_hashing"
 version = "0.1.1"
-source = "git+https://github.com/sigp/lighthouse#03e18ded86f8f350b8d8cfd38dc21df509228e15"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ring 0.16.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -740,7 +740,7 @@ dependencies = [
 [[package]]
 name = "eth2_ssz"
 version = "0.1.2"
-source = "git+https://github.com/sigp/lighthouse#c04026d073d12a98499c9cebd6d6134fc75355a9"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "ethereum-types 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -748,7 +748,7 @@ dependencies = [
 [[package]]
 name = "eth2_ssz_derive"
 version = "0.1.0"
-source = "git+https://github.com/sigp/lighthouse#c04026d073d12a98499c9cebd6d6134fc75355a9"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "quote 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.15.44 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -757,7 +757,7 @@ dependencies = [
 [[package]]
 name = "eth2_ssz_types"
 version = "0.2.0"
-source = "git+https://github.com/sigp/lighthouse#c04026d073d12a98499c9cebd6d6134fc75355a9"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "eth2_ssz 0.1.2 (git+https://github.com/sigp/lighthouse)",
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1748,7 +1748,7 @@ dependencies = [
 [[package]]
 name = "merkle_proof"
 version = "0.1.0"
-source = "git+https://github.com/sigp/lighthouse#c04026d073d12a98499c9cebd6d6134fc75355a9"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "eth2_hashing 0.1.1 (git+https://github.com/sigp/lighthouse)",
  "ethereum-types 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2532,7 +2532,7 @@ dependencies = [
 [[package]]
 name = "serde_hex"
 version = "0.1.0"
-source = "git+https://github.com/sigp/lighthouse#c04026d073d12a98499c9cebd6d6134fc75355a9"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3072,7 +3072,7 @@ dependencies = [
 [[package]]
 name = "tree_hash"
 version = "0.1.1"
-source = "git+https://github.com/sigp/lighthouse#c04026d073d12a98499c9cebd6d6134fc75355a9"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "eth2_hashing 0.1.1 (git+https://github.com/sigp/lighthouse)",
  "ethereum-types 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3081,7 +3081,7 @@ dependencies = [
 [[package]]
 name = "tree_hash_derive"
 version = "0.2.0"
-source = "git+https://github.com/sigp/lighthouse#c04026d073d12a98499c9cebd6d6134fc75355a9"
+source = "git+https://github.com/sigp/lighthouse#e4c56e6c5c929a3112c4a08852be54345b0acc0a"
 dependencies = [
  "quote 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.15.44 (registry+https://github.com/rust-lang/crates.io-index)",
