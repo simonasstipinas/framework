@@ -7,8 +7,6 @@ use std::convert::TryInto;
 use typenum::marker_traits::Unsigned;
 use types::beacon_state::BeaconState;
 use types::config::Config;
-use types::config::MainnetConfig;
-use types::consts::SHUFFLE_ROUND_COUNT;
 use types::helper_functions_types::Error;
 use types::primitives::{Domain, DomainType, Epoch, Slot, ValidatorIndex, Version, H256};
 
@@ -21,7 +19,7 @@ pub fn compute_start_slot_at_epoch<C: Config>(epoch: Epoch) -> Slot {
 }
 
 pub fn compute_activation_exit_epoch<C: Config>(epoch: Epoch) -> Epoch {
-    epoch + 1 + MainnetConfig::min_seed_lookahead()
+    epoch + 1 + C::min_seed_lookahead()
 }
 
 pub fn compute_domain(domain_type: DomainType, fork_version: Option<&Version>) -> Domain {
@@ -49,7 +47,7 @@ pub fn compute_shuffled_index<C: Config>(
     }
 
     let mut ind = index;
-    for current_round in 0..SHUFFLE_ROUND_COUNT {
+    for current_round in 0..C::shuffle_round_count() {
         // compute pivot
         let seed_bytes = seed.as_bytes();
         let round_bytes: Vec<u8> = int_to_bytes(current_round, 1).expect("");
@@ -124,7 +122,7 @@ pub fn compute_proposer_index<C: Config>(
         let effective_balance =
             state.validators[usize::try_from(candidate_index).expect("")].effective_balance;
         if effective_balance * max_random_byte
-            >= MainnetConfig::max_effective_balance() * u64::from(random_byte)
+            >= C::max_effective_balance() * u64::from(random_byte)
         {
             return Ok(candidate_index);
         }

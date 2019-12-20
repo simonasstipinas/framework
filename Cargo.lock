@@ -144,7 +144,6 @@ name = "beacon_fork_choice"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "core 0.1.0",
  "error_utils 0.1.0",
  "helper_functions 0.1.0",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -160,7 +159,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "beacon_fork_choice 0.1.0",
- "core 0.1.0",
  "eth2_network 0.1.0",
  "eth2_network_libp2p 0.1.0",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -395,13 +393,6 @@ dependencies = [
 name = "constant_time_eq"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "types 0.1.0",
-]
 
 [[package]]
 name = "crc32fast"
@@ -3054,7 +3045,6 @@ name = "transition_functions"
 version = "0.1.0"
 dependencies = [
  "bls 0.1.0 (git+https://github.com/sigp/lighthouse)",
- "core 0.1.0",
  "eth2_ssz_types 0.2.0 (git+https://github.com/sigp/lighthouse)",
  "ethereum-types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "helper_functions 0.1.0",
@@ -3066,6 +3056,7 @@ dependencies = [
  "rayon 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tree_hash 0.1.1 (git+https://github.com/sigp/lighthouse)",
  "tree_hash_derive 0.2.0 (git+https://github.com/sigp/lighthouse)",
+ "typenum 1.11.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "types 0.1.0",
 ]
 

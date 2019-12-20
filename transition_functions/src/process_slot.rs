@@ -1,11 +1,10 @@
 use crate::*;
-use core::consts::ExpConst;
 use helper_functions;
 use blocks::block_processing::*;
 use helper_functions::crypto::*;
 use types::primitives::*;
 use epochs::process_epoch::process_epoch;
-use core::*;
+use typenum::Unsigned as _;
 use types::{
     beacon_state::*,
     config::{Config, MainnetConfig},
@@ -16,7 +15,7 @@ use ethereum_types::H256 as Hash256;
 #[derive(Debug, PartialEq)]
 pub enum Error {}
 
-pub fn state_transition<T: Config + ExpConst>(state: &mut  BeaconState<T>, block: &BeaconBlock<T>, validate_state_root: bool) -> BeaconState<T> {
+pub fn state_transition<T: Config>(state: &mut  BeaconState<T>, block: &BeaconBlock<T>, validate_state_root: bool) -> BeaconState<T> {
     //# Process slots (including those with no blocks) since block
     process_slots(state, block.slot);
     //# Process block
@@ -30,30 +29,30 @@ pub fn state_transition<T: Config + ExpConst>(state: &mut  BeaconState<T>, block
 }
 
 
-pub fn process_slots<T: Config + ExpConst>(state: &mut  BeaconState<T>, slot: Slot) {
+pub fn process_slots<T: Config>(state: &mut  BeaconState<T>, slot: Slot) {
     assert!(state.slot <= slot);
     while state.slot < slot{
         process_slot(state);
         //# Process epoch on the start slot of the next epoch
-        if (state.slot + 1) % T::slots_per_epoch() == 0{
+        if (state.slot + 1) % T::SlotsPerEpoch::U64 == 0{
             process_epoch(state);
         }
         state.slot += 1;
     }
 }
 
-fn process_slot<T: Config + ExpConst>(state: &mut BeaconState<T>){
+fn process_slot<T: Config>(state: &mut BeaconState<T>){
     // Cache state root
     let previous_state_root = hash_tree_root(state);
 
-    state.state_roots[(state.slot as usize) % (T::slots_per_historical_root() as usize)] = previous_state_root;
+    state.state_roots[(state.slot as usize) % T::SlotsPerHistoricalRoot::USIZE] = previous_state_root;
     // Cache latest block header state root
     if state.latest_block_header.state_root == H256::from([0 as u8; 32]) {
         state.latest_block_header.state_root = previous_state_root;
     }
     // Cache block root
     let previous_block_root = signed_root(&state.latest_block_header);
-    state.block_roots[(state.slot as usize) % (T::slots_per_historical_root() as usize)] = previous_block_root;
+    state.block_roots[(state.slot as usize) % T::SlotsPerHistoricalRoot::USIZE] = previous_block_root;
 }
 
 

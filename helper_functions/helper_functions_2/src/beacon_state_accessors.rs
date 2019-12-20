@@ -7,6 +7,7 @@ use ssz_types::BitList;
 use std::cmp::max;
 use std::collections::BTreeSet;
 use std::convert::TryFrom;
+use typenum::Unsigned as _;
 use types::beacon_state::BeaconState;
 use types::config::Config;
 use types::consts::*;
@@ -35,12 +36,12 @@ pub fn get_block_root_at_slot<C: Config>(
     state: &BeaconState<C>,
     slot: Slot,
 ) -> Result<H256, Error> {
-    if !(slot < state.slot && state.slot <= slot + SLOTS_PER_HISTORICAL_ROOT) {
+    if !(slot < state.slot && state.slot <= slot + C::SlotsPerHistoricalRoot::U64) {
         return Err(Error::SlotOutOfRange);
     }
 
     let index =
-        usize::try_from(slot % SLOTS_PER_HISTORICAL_ROOT).expect("Expected successfull cast");
+        usize::try_from(slot % C::SlotsPerHistoricalRoot::U64).expect("Expected successfull cast");
 
     if index >= state.block_roots.len() {
         return Err(Error::IndexOutOfRange);
@@ -50,8 +51,8 @@ pub fn get_block_root_at_slot<C: Config>(
 }
 
 pub fn get_randao_mix<C: Config>(state: &BeaconState<C>, epoch: Epoch) -> Result<H256, Error> {
-    let index =
-        usize::try_from(epoch % EPOCHS_PER_HISTORICAL_VECTOR).expect("Expected successfull cast");
+    let index = usize::try_from(epoch % C::EpochsPerHistoricalVector::U64)
+        .expect("Expected successfull cast");
     if index >= state.randao_mixes.len() {
         return Err(Error::IndexOutOfRange);
     }
@@ -102,8 +103,8 @@ pub fn get_validator_churn_limit<C: Config>(state: &BeaconState<C>) -> Result<u6
     let active_validator_indices = get_active_validator_indices(state, get_current_epoch(state));
     let active_validator_count = active_validator_indices.len() as u64;
     Ok(max(
-        MIN_PER_EPOCH_CHURN_LIMIT,
-        active_validator_count / CHURN_LIMIT_QUOTIENT,
+        C::min_per_epoch_churn_limit(),
+        active_validator_count / C::churn_limit_quotient(),
     ))
 }
 
@@ -126,7 +127,7 @@ pub fn get_seed<C: Config>(
 
     let mix = get_randao_mix(
         state,
-        epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1,
+        epoch + C::EpochsPerHistoricalVector::U64 - C::min_seed_lookahead() - 1,
     );
     if mix.is_err() {
         return Err(mix.err().expect("Should be error"));
@@ -146,8 +147,8 @@ pub fn get_committee_count_at_slot<C: Config>(
 ) -> Result<u64, Error> {
     let epoch = compute_epoch_at_slot::<C>(slot);
     let active_count = get_active_validator_indices(state, epoch).len() as u64;
-    let mut count = if MAX_COMMITTEES_PER_SLOT < active_count {
-        MAX_COMMITTEES_PER_SLOT
+    let mut count = if C::max_committees_per_slot() < active_count {
+        C::max_committees_per_slot()
     } else {
         active_count
     };
@@ -169,14 +170,14 @@ pub fn get_beacon_committee<C: Config>(
     }
 
     let indices = &[];
-    let seed = get_seed(state, epoch, DOMAIN_BEACON_ATTESTER);
+    let seed = get_seed(state, epoch, C::domain_attestation());
     if seed.is_err() {
         return Err(seed.err().expect("Should be error"));
     }
 
     let committees = committees_per_slot.expect("Expected seed");
-    let i = (slot % SLOTS_PER_EPOCH) * committees + index;
-    let count = committees * SLOTS_PER_EPOCH;
+    let i = (slot % C::SlotsPerEpoch::U64) * committees + index;
+    let count = committees * C::SlotsPerEpoch::U64;
     compute_committee::<C>(indices, &seed.expect("Expected seed"), i, count)
 }
 
@@ -184,7 +185,7 @@ pub fn get_beacon_proposer_index<C: Config>(
     state: &BeaconState<C>,
 ) -> Result<ValidatorIndex, Error> {
     let epoch = get_current_epoch(state);
-    let seed = get_seed(state, epoch, DOMAIN_BEACON_PROPOSER);
+    let seed = get_seed(state, epoch, C::domain_beacon_proposer());
     if seed.is_err() {
         return Err(seed.err().expect("Should be error"));
     }

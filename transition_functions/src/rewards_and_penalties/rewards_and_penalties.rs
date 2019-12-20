@@ -1,8 +1,7 @@
 use helper_functions;
 use types::{ beacon_state::*, config::{ Config, MainnetConfig }};
-// use types::consts::*;
+use types::consts::*;
 // use types::types::*;
-use core::consts::ExpConst;
 use helper_functions::math::*;
 use types::primitives::*;
 use helper_functions::beacon_state_accessors::*;
@@ -12,7 +11,7 @@ use crate::attestations::attestations::AttestableBlock;
 
 pub trait StakeholderBlock<T>
 where
-    T: Config + ExpConst,
+    T: Config,
 {
     fn get_base_reward(&self, index: ValidatorIndex) -> Gwei;
     fn get_attestation_deltas(&self) -> (Vec<Gwei>, Vec<Gwei>);
@@ -21,7 +20,7 @@ where
 
 impl<T> StakeholderBlock<T> for BeaconState<T>
 where
-    T: Config + ExpConst,
+    T: Config,
 {
     fn get_base_reward(
         &self,
@@ -29,7 +28,7 @@ where
     ) -> Gwei {
         let total_balance = get_total_active_balance(&self).unwrap();
         let effective_balance = self.validators[index as usize].effective_balance;
-        return (effective_balance * T::base_reward_factor() / integer_squareroot(total_balance) / T::base_rewards_per_epoch()) as Gwei;
+        return (effective_balance * T::base_reward_factor() / integer_squareroot(total_balance) / BASE_REWARDS_PER_EPOCH) as Gwei;
     }
 
     fn get_attestation_deltas(
@@ -90,7 +89,7 @@ where
         if finality_delay > T::min_epochs_to_inactivity_penalty() {
             let matching_target_attesting_indices = self.get_unslashed_attesting_indices(matching_target_attestations);
             for index in eligible_validator_indices {
-                penalties[index as usize] += (T::base_rewards_per_epoch() * self.get_base_reward(index)) as Gwei;
+                penalties[index as usize] += (BASE_REWARDS_PER_EPOCH * self.get_base_reward(index)) as Gwei;
                 if !(matching_target_attesting_indices.contains(&index)) {
                     penalties[index as usize] += ((self.validators[index as usize].effective_balance * finality_delay) / T::inactivity_penalty_quotient()) as Gwei;
                 }

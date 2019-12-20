@@ -10,7 +10,6 @@ use std::collections::{BTreeMap, HashMap};
 
 use anyhow::{ensure, Result};
 use error_utils::DebugAsError;
-use eth2_core::ExpConst;
 use helper_functions::{beacon_state_accessors, crypto, misc, predicates};
 use log::info;
 use maplit::hashmap;
@@ -62,7 +61,7 @@ pub struct Store<C: Config> {
     delayed_until_slot: BTreeMap<Slot, Vec<DelayedObject<C>>>,
 }
 
-impl<C: Config + ExpConst> Store<C> {
+impl<C: Config> Store<C> {
     /// <https://github.com/ethereum/eth2.0-specs/blob/65b615a4d4cf75a50b29d25c53f1bc5422770ae5/specs/core/0_fork-choice.md#get_genesis_store>
     pub fn new(genesis_state: BeaconState<C>) -> Self {
         // The way the genesis block is constructed makes it possible for many parties to

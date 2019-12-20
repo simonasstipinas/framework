@@ -8,7 +8,6 @@ use typenum::Unsigned;
 use types::{
     beacon_state::BeaconState,
     config::Config,
-    consts::*,
     helper_functions_types::Error,
     primitives::{Epoch, H256},
     types::{AttestationData, IndexedAttestation, Validator},
@@ -81,7 +80,7 @@ pub fn validate_indexed_attestation<C: Config>(
         &[hash.as_slice()],
         accessors::get_domain(
             state,
-            DOMAIN_BEACON_ATTESTER,
+            C::domain_attestation(),
             Some(indexed_attestation.data.target.epoch),
         ),
         &[&aggr_pubkey],
