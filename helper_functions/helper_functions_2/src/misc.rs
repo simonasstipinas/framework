@@ -27,11 +27,8 @@ pub fn compute_domain(domain_type: DomainType, fork_version: Option<&Version>) -
     let mut domain_bytes = [0, 0, 0, 0, 0, 0, 0, 0];
     for i in 0..4 {
         domain_bytes[i] = domain_type_bytes[i];
-        match fork_version {
-            Some(f) => {
-                domain_bytes[i + 4] = f[i];
-            }
-            None => return bytes_to_int(&domain_bytes).expect(""),
+        if let Some(f) = fork_version {
+            domain_bytes[i + 4] = f[i];
         }
     }
     bytes_to_int(&domain_bytes).expect("")
@@ -67,7 +64,7 @@ pub fn compute_shuffled_index<C: Config>(
         // compute flip
         let flip = (pivot + index_count - ind) % index_count;
         // compute position
-        let position = if index > flip { ind } else { flip };
+        let position = if ind > flip { ind } else { flip };
         // compute source
         let addition_to_sum: Vec<u8> = int_to_bytes(position / 256, 4).expect("");
         let iter = addition_to_sum.iter();
@@ -78,12 +75,7 @@ pub fn compute_shuffled_index<C: Config>(
         // compute byte
         let byte = source[usize::try_from((position % 256) / 8).expect("")];
         // compute bit
-        let divisor: u8 = u8::try_from(2 * (position % 8)).expect("");
-        let bit: u8 = if divisor == 0 {
-            0
-        } else {
-            (byte / divisor) % 2
-        };
+        let bit: u8 = (byte >> (position % 8)) % 2;
         // flip or not?
         if bit == 1 {
             ind = flip;

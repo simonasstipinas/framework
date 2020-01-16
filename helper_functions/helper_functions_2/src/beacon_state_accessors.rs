@@ -113,7 +113,7 @@ pub fn get_seed<C: Config>(
     epoch: Epoch,
     domain_type: DomainType,
 ) -> Result<H256, Error> {
-    let domain_bytes = int_to_bytes(domain_type.into(), 8);
+    let domain_bytes = int_to_bytes(domain_type.into(), 4);
     if domain_bytes.is_err() {
         return Err(domain_bytes.err().expect("Should be error"));
     }
@@ -133,10 +133,10 @@ pub fn get_seed<C: Config>(
         return Err(mix.err().expect("Should be error"));
     }
 
-    let mut seed: [u8; 48] = [0; 48];
-    seed[0..8].copy_from_slice(&domain_b[..]);
-    seed[8..16].copy_from_slice(&epoch_b[..]);
-    seed[16..48].copy_from_slice(&(mix.expect("Expected success"))[..]);
+    let mut seed: [u8; 44] = [0; 44];
+    seed[0..4].copy_from_slice(&domain_b[..]);
+    seed[4..12].copy_from_slice(&epoch_b[..]);
+    seed[12..44].copy_from_slice(&(mix.expect("Expected success"))[..]);
 
     Ok(H256::from_slice(&hash(&seed)))
 }
@@ -146,7 +146,9 @@ pub fn get_committee_count_at_slot<C: Config>(
     slot: Slot,
 ) -> Result<u64, Error> {
     let epoch = compute_epoch_at_slot::<C>(slot);
-    let active_count = get_active_validator_indices(state, epoch).len() as u64;
+    let active_count = get_active_validator_indices(state, epoch).len() as u64
+        / C::SlotsPerEpoch::U64
+        / C::target_committee_size();
     let mut count = if C::max_committees_per_slot() < active_count {
         C::max_committees_per_slot()
     } else {
@@ -169,7 +171,7 @@ pub fn get_beacon_committee<C: Config>(
         return Err(committees_per_slot.err().expect("Should be error"));
     }
 
-    let indices = &[];
+    let indices = get_active_validator_indices(state, epoch);
     let seed = get_seed(state, epoch, C::domain_attestation());
     if seed.is_err() {
         return Err(seed.err().expect("Should be error"));
@@ -178,7 +180,8 @@ pub fn get_beacon_committee<C: Config>(
     let committees = committees_per_slot.expect("Expected seed");
     let i = (slot % C::SlotsPerEpoch::U64) * committees + index;
     let count = committees * C::SlotsPerEpoch::U64;
-    compute_committee::<C>(indices, &seed.expect("Expected seed"), i, count)
+
+    compute_committee::<C>(indices.as_slice(), &seed.expect("Expected seed"), i, count)
 }
 
 pub fn get_beacon_proposer_index<C: Config>(
@@ -191,7 +194,13 @@ pub fn get_beacon_proposer_index<C: Config>(
     }
 
     let indices = get_active_validator_indices(state, epoch);
-    compute_proposer_index(state, &indices, &seed.expect("Expected success"))
+
+    let mut seed_with_slot = [0; 40];
+    seed_with_slot[..32].copy_from_slice(seed?.as_bytes());
+    seed_with_slot[32..].copy_from_slice(&state.slot.to_le_bytes());
+    let seed = H256::from_slice(hash(&seed_with_slot).as_slice());
+
+    compute_proposer_index(state, &indices, &seed)
 }
 
 pub fn get_total_balance<C: Config>(
@@ -264,7 +273,7 @@ pub fn get_attesting_indices<C: Config>(
         .into_iter()
         .enumerate()
     {
-        if bitlist.get(i).is_ok() {
+        if bitlist.get(i).expect("bitfield length should match committee size") {
             validators.insert(v);
         }
     }

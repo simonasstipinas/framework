@@ -120,9 +120,7 @@ fn process_block_header<T: Config>(state: &mut BeaconState<T>, block: &BeaconBlo
         parent_root: block.parent_root,
         //# `state_root` is zeroed and overwritten in the next `process_slot` call
         body_root: hash_tree_root(&block.body),
-        //# `signature` is zeroed
-        signature: block.signature.clone(),   //# Placeholder
-        state_root: block.state_root.clone(), //# Placeholder so the compiler doesn't scream at me as much
+        ..BeaconBlockHeader::default()
     };
     //# Verify proposer is not slashed
     let proposer = &state.validators[get_beacon_proposer_index(&state).unwrap() as usize];
@@ -237,26 +235,13 @@ fn process_attester_slashing<T: Config>(
     assert!(slashed_any);
 }
 
-fn get_attestation_data_index<T: Config>(
-    state: &BeaconState<T>,
-    attestation_data: &AttestationData,
-) -> Result<u64, Error> {
-    for (index, x) in state.current_epoch_attestations.iter().enumerate() {
-        if x.data == *attestation_data {
-            return Ok(index as u64);
-        }
-    }
-    return Err(Error::SlotOutOfBounds);
-}
-
 fn process_attestation<T: Config>(
     state: &mut BeaconState<T>,
     attestation: &Attestation<T>,
 ) {
     let data = &attestation.data;
-    let index = get_attestation_data_index(state, data).unwrap();
     let attestation_slot = data.slot;
-    assert!(index < get_committee_count_at_slot(state, attestation_slot).unwrap()); //# Nėra index ir slot. ¯\_(ツ)_/¯
+    assert!(data.index < get_committee_count_at_slot(state, attestation_slot).unwrap()); //# Nėra index ir slot. ¯\_(ツ)_/¯
     assert!(
         data.target.epoch == get_previous_epoch(state)
             || data.target.epoch == get_current_epoch(state)
@@ -266,7 +251,7 @@ fn process_attestation<T: Config>(
             && state.slot <= attestation_slot + T::SlotsPerEpoch::U64
     );
 
-    let committee = get_beacon_committee(state, attestation_slot, index).unwrap();
+    let committee = get_beacon_committee(state, attestation_slot, data.index).unwrap();
     assert_eq!(attestation.aggregation_bits.len(), committee.len());
 
     let pending_attestation = PendingAttestation {
