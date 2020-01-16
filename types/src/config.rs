@@ -256,7 +256,7 @@ where
         10
     }
     fn target_committee_size() -> u64 {
-        4
+        128
     }
     fn whistleblower_reward_quotient() -> u64 {
         512
@@ -300,7 +300,7 @@ impl Config for MinimalConfig {
     type MaxAttestationsPerEpoch = Prod<Self::MaxAttestations, Self::SlotsPerEpoch>;
     type MaxDeposits = typenum::U16;
     type MaxProposerSlashings = typenum::U16;
-    type MaxValidatorsPerCommittee = typenum::U4096;
+    type MaxValidatorsPerCommittee = typenum::U2048;
     type MaxVoluntaryExits = typenum::U16;
     type SecondsPerSlot = typenum::U6;
     type SlotsPerEpoch = typenum::U8;
@@ -309,6 +309,9 @@ impl Config for MinimalConfig {
     type ValidatorRegistryLimit = typenum::U1099511627776;
 
     fn max_committees_per_slot() -> u64 {
+        4
+    }
+    fn target_committee_size() -> u64 {
         4
     }
 }
