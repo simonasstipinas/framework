@@ -286,7 +286,7 @@ pub fn get_attesting_indices<C: Config>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ssz_types::{typenum, FixedVector};
+    use ssz_types::{typenum, FixedVector, VariableList};
     use types::config::MinimalConfig;
     use types::types::Validator;
 
@@ -337,8 +337,8 @@ mod tests {
         let state = BeaconState::<MinimalConfig>::default();
         let result = get_validator_churn_limit::<MinimalConfig>(&state);
         assert_eq!(
-            result.expect("Expected MIN_PER_EPOCH_CHURN_LIMIT"),
-            MIN_PER_EPOCH_CHURN_LIMIT
+            result.expect("Expected min_per_epoch_churn_limit"),
+            MinimalConfig::min_per_epoch_churn_limit()
         );
     }
 

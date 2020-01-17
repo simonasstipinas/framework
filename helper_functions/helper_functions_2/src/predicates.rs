@@ -185,7 +185,6 @@ mod tests {
                 epoch: 0,
                 root: H256([0; 32]),
             },
-            crosslink: default_crosslink(),
             index: 0,
             slot: 0,
         }
@@ -407,36 +406,21 @@ mod tests {
         use types::config::MainnetConfig;
 
         #[test]
-        fn custody_bit1_set() {
-            let state: BeaconState<MainnetConfig> = BeaconState::default();
-            let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
-            attestation
-                .custody_bit_1_indices
-                .push(1)
-                .expect("Unable to add custody bit index");
-
-            assert_eq!(
-                validate_indexed_attestation(&state, &attestation),
-                Err(Error::CustodyBit1Set)
-            );
-        }
-
-        #[test]
         fn index_set_not_sorted() {
             let state: BeaconState<MainnetConfig> = BeaconState::default();
             let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
             attestation
-                .custody_bit_0_indices
+                .attesting_indices
                 .push(2)
-                .expect("Unable to add custody bit index");
+                .expect("Unable to add attesting index");
             attestation
-                .custody_bit_0_indices
+                .attesting_indices
                 .push(1)
-                .expect("Unable to add custody bit index");
+                .expect("Unable to add attesting index");
             attestation
-                .custody_bit_0_indices
+                .attesting_indices
                 .push(3)
-                .expect("Unable to add custody bit index");
+                .expect("Unable to add attesting index");
 
             assert_eq!(
                 validate_indexed_attestation(&state, &attestation),
@@ -449,9 +433,9 @@ mod tests {
             let state: BeaconState<MainnetConfig> = BeaconState::default();
             let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
             attestation
-                .custody_bit_0_indices
+                .attesting_indices
                 .push(0)
-                .expect("Unable to add custody bit index");
+                .expect("Unable to add attesting index");
 
             assert_eq!(
                 validate_indexed_attestation(&state, &attestation),
@@ -464,17 +448,17 @@ mod tests {
             let mut state: BeaconState<MainnetConfig> = BeaconState::default();
             let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
             attestation
-                .custody_bit_0_indices
+                .attesting_indices
                 .push(0)
-                .expect("Unable to add custody bit index");
+                .expect("Unable to add attesting index");
             attestation
-                .custody_bit_0_indices
+                .attesting_indices
                 .push(1)
-                .expect("Unable to add custody bit index");
+                .expect("Unable to add attesting index");
             attestation
-                .custody_bit_0_indices
+                .attesting_indices
                 .push(2)
-                .expect("Unable to add custody bit index");
+                .expect("Unable to add attesting index");
 
             // default_validator() generates randome public key
             state
@@ -501,13 +485,9 @@ mod tests {
             let mut state: BeaconState<MainnetConfig> = BeaconState::default();
             let mut attestation: IndexedAttestation<MainnetConfig> = IndexedAttestation::default();
             attestation
-                .custody_bit_0_indices
+                .attesting_indices
                 .push(0)
-                .expect("Unable to add custody bit index");
-            attestation
-                .custody_bit_0_indices
-                .push(1)
-                .expect("Unable to add custody bit index");
+                .expect("Unable to add attesting index");
 
             let skey1 = SecretKey::random();
             let pkey1 = PublicKey::from_secret_key(&skey1);
@@ -534,28 +514,22 @@ mod tests {
 
             attestation.data.beacon_block_root = H256([0xFF; 32]);
 
-            let digest1 = AttestationDataAndCustodyBit {
-                data: attestation.data.clone(),
-                custody_bit: false,
-            }
-            .tree_hash_root();
+            let digest1 = attestation.data.tree_hash_root();
 
             let sig1 = Signature::new(
                 digest1.as_slice(),
-                //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
                 accessors::get_domain(
                     &state,
-                    DOMAIN_BEACON_ATTESTER,
+                    MainnetConfig::domain_attestation(),
                     Some(attestation.data.target.epoch),
                 ),
                 &skey1,
             );
             let sig2 = Signature::new(
                 digest1.as_slice(),
-                //TODO: should pass DOMAIN_BEACON_ATTESTER domain type (does not exist in config)
                 accessors::get_domain(
                     &state,
-                    DOMAIN_BEACON_ATTESTER,
+                    MainnetConfig::domain_attestation(),
                     Some(attestation.data.target.epoch),
                 ),
                 &skey2,
@@ -568,13 +542,13 @@ mod tests {
             attestation.signature = asig;
 
             let aggr_pubkey =
-                aggregate_validator_public_keys(&attestation.custody_bit_0_indices, &state)
+                aggregate_validator_public_keys(&attestation.attesting_indices, &state)
                     .expect("Success");
             assert!(attestation.signature.verify(
                 &digest1,
                 accessors::get_domain(
                     &state,
-                    DOMAIN_BEACON_ATTESTER,
+                    MainnetConfig::domain_attestation(),
                     Some(attestation.data.target.epoch)
                 ),
                 &aggr_pubkey,
