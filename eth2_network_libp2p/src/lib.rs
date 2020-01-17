@@ -137,7 +137,7 @@ impl<C: Config, N: Networked<C>> EventHandler<C, N> {
             Libp2pEvent::RPC(
                 peer_id,
                 RPCEvent::Request(request_id, RPCRequest::Status(status_message)),
-            ) => self.handle_status_request(peer_id, request_id, status_message),
+            ) => self.handle_status_request(peer_id, request_id, &status_message),
             Libp2pEvent::RPC(peer_id, RPCEvent::Request(_, RPCRequest::Goodbye(reason))) => {
                 self.handle_goodbye_request(&peer_id, &reason)
             }
@@ -177,9 +177,9 @@ impl<C: Config, N: Networked<C>> EventHandler<C, N> {
         &mut self,
         peer_id: PeerId,
         status_request_id: RequestId,
-        status_message: StatusMessage,
+        status_message: &StatusMessage,
     ) -> Result<EventFuture> {
-        let remote = status_message_into_status(status_message);
+        let remote = status_message_to_status(status_message);
 
         info!(
             "received Status request (peer_id: {}, remote: {:?})",
@@ -377,7 +377,7 @@ impl<C: Config, N: Networked<C>> EventHandler<C, N> {
     ) -> Result<EventFuture> {
         match response {
             RPCErrorResponse::Success(RPCResponse::Status(status_message)) => {
-                let remote = status_message_into_status(status_message);
+                let remote = status_message_to_status(&status_message);
 
                 info!(
                     "received Status response (peer_id: {}, remote: {:?})",
@@ -620,14 +620,14 @@ pub fn run_network<C: Config, N: Networked<C>>(
     })
 }
 
-fn status_message_into_status(status_message: StatusMessage) -> Status {
+fn status_message_to_status(status_message: &StatusMessage) -> Status {
     let StatusMessage {
         fork_version,
         finalized_root,
         finalized_epoch,
         head_root,
         head_slot,
-    } = status_message;
+    } = *status_message;
     Status {
         fork_version,
         finalized_root,
