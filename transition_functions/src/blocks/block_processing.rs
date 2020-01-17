@@ -5,10 +5,11 @@ use helper_functions::math::*;
 use helper_functions::misc::{compute_domain, compute_epoch_at_slot};
 use helper_functions::predicates::{
     is_active_validator, is_slashable_attestation_data, is_slashable_validator,
-    validate_indexed_attestation, is_valid_merkle_branch,
+    is_valid_merkle_branch, validate_indexed_attestation,
 };
 use std::collections::BTreeSet;
 use std::convert::TryInto;
+use typenum::Unsigned as _;
 use types::consts::*;
 use types::types::*;
 use types::{
@@ -16,7 +17,6 @@ use types::{
     config::{Config, MainnetConfig},
     types::VoluntaryExit,
 };
-use typenum::Unsigned as _;
 
 pub fn process_block<T: Config>(state: &mut BeaconState<T>, block: &BeaconBlock<T>) {
     process_block_header(state, &block);
@@ -93,19 +93,22 @@ fn process_deposit<T: Config>(state: &mut BeaconState<T>, deposit: &Deposit) {
     }
     //# Add validator and balance entries
     // bls::PublicKey::from_bytes(&pubkey.as_bytes()).unwrap()
-    state.validators.push(Validator {
-        pubkey: bls::PublicKey::from_bytes(&pubkey.as_bytes()).unwrap(),
-        withdrawal_credentials: deposit.data.withdrawal_credentials,
-        activation_eligibility_epoch: FAR_FUTURE_EPOCH,
-        activation_epoch: FAR_FUTURE_EPOCH,
-        exit_epoch: FAR_FUTURE_EPOCH,
-        withdrawable_epoch: FAR_FUTURE_EPOCH,
-        effective_balance: std::cmp::min(
-            amount - (amount % T::effective_balance_increment()),
-            T::max_effective_balance(),
-        ),
-        slashed: false,
-    }).unwrap();
+    state
+        .validators
+        .push(Validator {
+            pubkey: bls::PublicKey::from_bytes(&pubkey.as_bytes()).unwrap(),
+            withdrawal_credentials: deposit.data.withdrawal_credentials,
+            activation_eligibility_epoch: FAR_FUTURE_EPOCH,
+            activation_epoch: FAR_FUTURE_EPOCH,
+            exit_epoch: FAR_FUTURE_EPOCH,
+            withdrawable_epoch: FAR_FUTURE_EPOCH,
+            effective_balance: std::cmp::min(
+                amount - (amount % T::effective_balance_increment()),
+                T::max_effective_balance(),
+            ),
+            slashed: false,
+        })
+        .unwrap();
     &state.balances.push(*amount);
 }
 
@@ -149,12 +152,16 @@ fn process_randao<T: Config>(state: &mut BeaconState<T>, body: &BeaconBlockBody<
     //# Mix in RANDAO reveal
     let mix = xor(
         get_randao_mix(&state, epoch).unwrap().as_fixed_bytes(),
-        &hash(&body.randao_reveal.as_bytes()).as_slice().try_into().unwrap(),
+        &hash(&body.randao_reveal.as_bytes())
+            .as_slice()
+            .try_into()
+            .unwrap(),
     );
     let mut array = [0; 32];
     let mix = &mix[..array.len()]; // panics if not enough data
     array.copy_from_slice(mix);
-    state.randao_mixes[(epoch % T::EpochsPerHistoricalVector::U64) as usize] = array.try_into().unwrap();
+    state.randao_mixes[(epoch % T::EpochsPerHistoricalVector::U64) as usize] =
+        array.try_into().unwrap();
 }
 
 fn process_proposer_slashing<T: Config>(
@@ -235,10 +242,7 @@ fn process_attester_slashing<T: Config>(
     assert!(slashed_any);
 }
 
-fn process_attestation<T: Config>(
-    state: &mut BeaconState<T>,
-    attestation: &Attestation<T>,
-) {
+fn process_attestation<T: Config>(state: &mut BeaconState<T>, attestation: &Attestation<T>) {
     let data = &attestation.data;
     let attestation_slot = data.slot;
     assert!(data.index < get_committee_count_at_slot(state, attestation_slot).unwrap()); //# Nėra index ir slot. ¯\_(ツ)_/¯
@@ -263,10 +267,16 @@ fn process_attestation<T: Config>(
 
     if data.target.epoch == get_current_epoch(state) {
         assert_eq!(data.source, state.current_justified_checkpoint);
-        state.current_epoch_attestations.push(pending_attestation).unwrap();
+        state
+            .current_epoch_attestations
+            .push(pending_attestation)
+            .unwrap();
     } else {
         assert_eq!(data.source, state.previous_justified_checkpoint);
-        state.previous_epoch_attestations.push(pending_attestation).unwrap();
+        state
+            .previous_epoch_attestations
+            .push(pending_attestation)
+            .unwrap();
     }
 
     //# Check signature

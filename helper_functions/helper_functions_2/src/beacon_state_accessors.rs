@@ -273,7 +273,10 @@ pub fn get_attesting_indices<C: Config>(
         .into_iter()
         .enumerate()
     {
-        if bitlist.get(i).expect("bitfield length should match committee size") {
+        if bitlist
+            .get(i)
+            .expect("bitfield length should match committee size")
+        {
             validators.insert(v);
         }
     }

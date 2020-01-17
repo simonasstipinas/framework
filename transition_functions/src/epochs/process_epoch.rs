@@ -156,9 +156,7 @@ fn process_registry_updates<T: Config>(state: &mut BeaconState<T>) {
     }
 }
 
-fn process_rewards_and_penalties<T: Config>(
-    state: &mut BeaconState<T>,
-) -> Result<(), Error> {
+fn process_rewards_and_penalties<T: Config>(state: &mut BeaconState<T>) -> Result<(), Error> {
     if get_current_epoch(state) == T::genesis_epoch() {
         return Ok(());
     }
@@ -223,7 +221,8 @@ fn process_final_updates<T: Config>(state: &mut BeaconState<T>) {
         };
         state
             .historical_roots
-            .push(hash_tree_root(&historical_batch)).unwrap();
+            .push(hash_tree_root(&historical_batch))
+            .unwrap();
     }
     //# Rotate current/previous epoch attestations
     state.previous_epoch_attestations = state.current_epoch_attestations.clone();
