@@ -8,6 +8,7 @@ members = [
     'types',
     'transition_functions',
     'helper_functions/helper_functions_2',
+    'utils/merkle_proof',
 ]
 
 [profile.release]
