@@ -36,7 +36,7 @@ then
 fi
 cargo install-update --allow-no-update cargo-tarpaulin cargo-update
 
-cargo update --locked
+cargo update 
 cargo fmt --all -- --check
 cargo clippy                                      \
     --profile test                                \
@@ -80,3 +80,5 @@ tarpaulin() {
 # We work around that by searching Tarpaulin's output for error messages and
 # making the build fail if we find any.
 ! tarpaulin |& ag --passthrough ERROR
+# 
+# 
