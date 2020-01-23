@@ -332,29 +332,29 @@ mod tests {
 
     #[test]
     fn verify_merkle_proof_test() {
-        let leaf_b00 = H256::from([0xAA; 32]); //4
-        let leaf_b01 = H256::from([0xBB; 32]); //5
-        let leaf_b10 = H256::from([0xCC; 32]); //6
-        let leaf_b11 = H256::from([0xDD; 32]); //7
+        let fourth = H256::from([0xAA; 32]);
+        let fifth = H256::from([0xBB; 32]);
+        let sixth = H256::from([0xCC; 32]);
+        let seventh = H256::from([0xDD; 32]);
 
-        let node_b0x = hash_and_concat(leaf_b00, leaf_b01); //3
-        let node_b1x = hash_and_concat(leaf_b10, leaf_b11); //2
+        let third = hash_and_concat(fourth, fifth);
+        let second = hash_and_concat(sixth, seventh);
 
-        let root = hash_and_concat(node_b0x, node_b1x); //1
+        let root = hash_and_concat(third, second);
 
         assert_eq!(
-            verify_merkle_proof(leaf_b00, &[leaf_b01, node_b1x], 0, 4, root)
+            verify_merkle_proof(fourth, &[fifth, second], 0, 4, root)
                 .expect("verification failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[leaf_b00, node_b1x], 0, 5, node_b1x),
+            verify_merkle_proof(fifth, &[fourth, second], 0, 5, second),
             Ok(false)
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[leaf_b01, leaf_b00, node_b1x], 0, 5, node_b1x),
+            verify_merkle_proof(fifth, &[fifth, fourth, second], 0, 5, second),
             Err(MerkleProofError::InvalidParamLength {
                 len_first: 3,
                 len_second: 2
@@ -362,7 +362,7 @@ mod tests {
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[leaf_b01], 0, 5, node_b1x),
+            verify_merkle_proof(fifth, &[fifth], 0, 5, second),
             Err(MerkleProofError::InvalidParamLength {
                 len_first: 1,
                 len_second: 2
@@ -370,59 +370,58 @@ mod tests {
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b00, &[node_b1x, leaf_b01], 0, 4, root)
+            verify_merkle_proof(fourth, &[second, fifth], 0, 4, root)
                 .expect("verification failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[leaf_b00, node_b1x], 0, 5, root)
+            verify_merkle_proof(fifth, &[fourth, second], 0, 5, root)
                 .expect("verification failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b10, &[leaf_b11, node_b0x], 0, 6, root)
+            verify_merkle_proof(sixth, &[seventh, third], 0, 6, root)
                 .expect("verification failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b11, &[leaf_b10, node_b0x], 0, 7, root)
+            verify_merkle_proof(seventh, &[sixth, third], 0, 7, root)
                 .expect("verification failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b11, &[leaf_b10], 0, 3, node_b1x)
-                .expect("verification failed!"),
+            verify_merkle_proof(seventh, &[sixth], 0, 3, second).expect("verification failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[], 0, 1, root).expect("verification failed!"),
+            verify_merkle_proof(fifth, &[], 0, 1, root).expect("verification failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[node_b1x, leaf_b00], 0, 5, root)
+            verify_merkle_proof(fifth, &[second, fourth], 0, 5, root)
                 .expect("verification failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[leaf_b00], 0, 2, root).expect("verification failed!"),
+            verify_merkle_proof(fifth, &[fourth], 0, 2, root).expect("verification failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[leaf_b00, node_b1x], 0, 4, root)
+            verify_merkle_proof(fifth, &[fourth, second], 0, 4, root)
                 .expect("verification failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b01, &[leaf_b00, node_b1x], 0, 5, node_b1x)
+            verify_merkle_proof(fifth, &[fourth, second], 0, 5, second)
                 .expect("verification failed!"),
             false
         );
@@ -430,20 +429,20 @@ mod tests {
 
     #[test]
     fn verify_merkle_multiproof_first_test() {
-        let leaf_b00 = H256::from([0xAA; 32]); //4
-        let leaf_b01 = H256::from([0xBB; 32]); //5
-        let leaf_b10 = H256::from([0xCC; 32]); //6
-        let leaf_b11 = H256::from([0xDD; 32]); //7
+        let fourth = H256::from([0xAA; 32]);
+        let fifth = H256::from([0xBB; 32]);
+        let sixth = H256::from([0xCC; 32]);
+        let seventh = H256::from([0xDD; 32]);
 
-        let node_b0x = hash_and_concat(leaf_b00, leaf_b01); // 3
-        let node_b1x = hash_and_concat(leaf_b10, leaf_b11); //2
+        let third = hash_and_concat(fourth, fifth);
+        let second = hash_and_concat(sixth, seventh);
 
-        let root = hash_and_concat(node_b0x, node_b1x); //1
+        let root = hash_and_concat(third, second);
 
         assert_eq!(
             verify_merkle_multiproof(
-                &[leaf_b00, leaf_b01, leaf_b11],
-                &[leaf_b10, node_b1x],
+                &[fourth, fifth, seventh],
+                &[sixth, second],
                 &[4, 5, 7],
                 root
             )
@@ -452,31 +451,21 @@ mod tests {
         );
 
         assert_eq!(
-            verify_merkle_multiproof(
-                &[leaf_b00, leaf_b01, leaf_b10, leaf_b11],
-                &[],
-                &[4, 5, 6, 7],
-                root
-            )
-            .expect("verification of multiproof failed!"),
+            verify_merkle_multiproof(&[fourth, fifth, sixth, seventh], &[], &[4, 5, 6, 7], root)
+                .expect("verification of multiproof failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_multiproof(
-                &[leaf_b00, leaf_b01, leaf_b10],
-                &[leaf_b10, node_b1x],
-                &[4, 5, 7],
-                root
-            )
-            .expect("verification of multiproof failed!"),
+            verify_merkle_multiproof(&[fourth, fifth, sixth], &[sixth, second], &[4, 5, 7], root)
+                .expect("verification of multiproof failed!"),
             false
         );
 
         assert_eq!(
             verify_merkle_multiproof(
-                &[leaf_b00, leaf_b10, leaf_b01],
-                &[leaf_b11, node_b1x],
+                &[fourth, sixth, fifth],
+                &[seventh, second],
                 &[4, 5, 6],
                 root
             )
@@ -486,8 +475,8 @@ mod tests {
 
         assert_eq!(
             verify_merkle_multiproof(
-                &[leaf_b00, leaf_b01, leaf_b10],
-                &[leaf_b11, node_b1x],
+                &[fourth, fifth, sixth],
+                &[seventh, second],
                 &[4, 5, 6],
                 root
             )
@@ -496,19 +485,19 @@ mod tests {
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b00, leaf_b01], &[node_b1x, node_b1x], &[4, 5], root)
+            verify_merkle_multiproof(&[fourth, fifth], &[second, second], &[4, 5], root)
                 .expect("verification of multiproof failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b00], &[leaf_b01, node_b1x], &[4], root)
+            verify_merkle_multiproof(&[fourth], &[fifth, second], &[4], root)
                 .expect("verification of multiproof failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b01], &[leaf_b00, node_b1x], &[5], root)
+            verify_merkle_multiproof(&[fifth], &[fourth, second], &[5], root)
                 .expect("verification of multiproof failed!"),
             true
         );
@@ -516,66 +505,66 @@ mod tests {
 
     #[test]
     fn verify_merkle_multiproof_second_test() {
-        let leaf_b00 = H256::from([0xAA; 32]); //4
-        let leaf_b01 = H256::from([0xBB; 32]); //5
-        let leaf_b10 = H256::from([0xCC; 32]); //6
-        let leaf_b11 = H256::from([0xDD; 32]); //7
+        let fourth = H256::from([0xAA; 32]);
+        let fifth = H256::from([0xBB; 32]);
+        let sixth = H256::from([0xCC; 32]);
+        let seventh = H256::from([0xDD; 32]);
 
-        let node_b0x = hash_and_concat(leaf_b00, leaf_b01); // 3
-        let node_b1x = hash_and_concat(leaf_b10, leaf_b11); //2
+        let third = hash_and_concat(fourth, fifth);
+        let second = hash_and_concat(sixth, seventh);
 
-        let root = hash_and_concat(node_b0x, node_b1x); //1
+        let root = hash_and_concat(third, second);
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b10], &[leaf_b11, node_b0x], &[6], root)
+            verify_merkle_multiproof(&[sixth], &[seventh, third], &[6], root)
                 .expect("verification of multiproof failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b11], &[leaf_b10, node_b0x], &[7], root)
+            verify_merkle_multiproof(&[seventh], &[sixth, third], &[7], root)
                 .expect("verification of multiproof failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b11], &[leaf_b10], &[3], node_b1x)
+            verify_merkle_multiproof(&[seventh], &[sixth], &[3], second)
                 .expect("verification of multiproof failed!"),
             true
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b01], &[], &[1], root)
+            verify_merkle_multiproof(&[fifth], &[], &[1], root)
                 .expect("verification of multiproof failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b01], &[node_b1x, leaf_b00], &[5], root)
+            verify_merkle_multiproof(&[fifth], &[second, fourth], &[5], root)
                 .expect("verification of multiproof failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b01], &[leaf_b00], &[2], root)
+            verify_merkle_multiproof(&[fifth], &[fourth], &[2], root)
                 .expect("verification of multiproof failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b01], &[leaf_b00, node_b1x], &[4], root)
+            verify_merkle_multiproof(&[fifth], &[fourth, second], &[4], root)
                 .expect("verification of multiproof failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b01], &[leaf_b00, node_b1x], &[5], node_b1x)
+            verify_merkle_multiproof(&[fifth], &[fourth, second], &[5], second)
                 .expect("verification of multiproof failed!"),
             false
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b01, node_b0x], &[leaf_b00, node_b1x], &[5], node_b1x),
+            verify_merkle_multiproof(&[fifth, third], &[fourth, second], &[5], second),
             Err(MerkleProofError::InvalidParamLength {
                 len_first: 2,
                 len_second: 1
@@ -583,33 +572,33 @@ mod tests {
         );
 
         assert_eq!(
-            verify_merkle_multiproof(&[leaf_b11, leaf_b10], &[node_b0x], &[7, 6], root),
+            verify_merkle_multiproof(&[seventh, sixth], &[third], &[7, 6], root),
             Ok(true)
         );
     }
 
     #[test]
     fn verify_merkle_proof_bigger_test() {
-        let leaf_b000 = H256::from([0xAA; 32]); //8
-        let leaf_b001 = H256::from([0xBB; 32]); //9
-        let leaf_b010 = H256::from([0xCC; 32]); //10
-        let leaf_b011 = H256::from([0xDD; 32]); //11
+        let eighth = H256::from([0xAA; 32]);
+        let ninth = H256::from([0xBB; 32]);
+        let tenth = H256::from([0xCC; 32]);
+        let eleventh = H256::from([0xDD; 32]);
 
-        let node_b00x = hash_and_concat(leaf_b000, leaf_b001); //4
-        let node_b01x = hash_and_concat(leaf_b010, leaf_b011); //5
+        let fourth = hash_and_concat(eighth, ninth);
+        let fifth = hash_and_concat(tenth, eleventh);
 
-        let leaf_b100 = H256::from([0xAA; 32]); //12
-        let leaf_b101 = H256::from([0xBB; 32]); //13
-        let leaf_b110 = H256::from([0xCC; 32]); //14
-        let leaf_b111 = H256::from([0xDD; 32]); //15
+        let twelfth = H256::from([0xEE; 32]);
+        let thirteenth = H256::from([0xFF; 32]);
+        let fourteenth = H256::from([0xAA; 32]);
+        let fifteenth = H256::from([0xBB; 32]);
 
-        let node_b10x = hash_and_concat(leaf_b100, leaf_b101); //6
-        let node_b11x = hash_and_concat(leaf_b110, leaf_b111); //7
+        let sixth = hash_and_concat(twelfth, thirteenth);
+        let seventh = hash_and_concat(fourteenth, fifteenth);
 
-        let node_b0xx = hash_and_concat(node_b00x, node_b01x); //2
-        let node_b1xx = hash_and_concat(node_b10x, node_b11x); //3
+        let second = hash_and_concat(fourth, fifth);
+        let third = hash_and_concat(sixth, seventh);
 
-        let root = hash_and_concat(node_b0xx, node_b1xx); //1
+        let root = hash_and_concat(second, third);
 
         assert_eq!(
             get_path_indices(15_usize),
@@ -617,23 +606,17 @@ mod tests {
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b000, &[leaf_b001, node_b01x, node_b1xx], 0, 8, root),
+            verify_merkle_proof(eighth, &[ninth, fifth, third], 0, 8, root),
             Ok(true)
         );
 
         assert_eq!(
-            verify_merkle_proof(leaf_b000, &[leaf_b001, node_b01x, node_b1xx], 0, 9, root),
+            verify_merkle_proof(eighth, &[ninth, fifth, third], 0, 9, root),
             Ok(false)
         );
 
         assert_eq!(
-            verify_merkle_proof(
-                leaf_b000,
-                &[leaf_b001, node_b01x, node_b1xx, node_b00x],
-                0,
-                9,
-                root
-            ),
+            verify_merkle_proof(eighth, &[ninth, fifth, third, fourth], 0, 9, root),
             Err(MerkleProofError::InvalidParamLength {
                 len_first: 4,
                 len_second: 3
