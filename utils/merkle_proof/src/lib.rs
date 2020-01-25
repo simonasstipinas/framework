@@ -158,9 +158,9 @@ fn calculate_merkle_root(
     for (i, &proof_step) in proof.iter().enumerate() {
         if get_generalized_index_bit(index, i) {
             //select how leaf's are concated
-            root = hash_and_concat(proof_step , root);
+            root = hash_and_concat(proof_step, root);
         } else {
-            root = hash_and_concat(root , proof_step);
+            root = hash_and_concat(root, proof_step);
 
         }
     }
