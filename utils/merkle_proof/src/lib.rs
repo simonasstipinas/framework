@@ -161,7 +161,6 @@ fn calculate_merkle_root(
             root = hash_and_concat(proof_step, root);
         } else {
             root = hash_and_concat(root, proof_step);
-
         }
     }
     Ok(root)
