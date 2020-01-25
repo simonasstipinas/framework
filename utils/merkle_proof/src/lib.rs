@@ -55,7 +55,7 @@ fn get_generalized_index_length(index: usize) -> usize {
 }
 
 const fn get_generalized_index_bit(index: usize, position: usize) -> bool {
-    ((index >> position) & 0x01) > 0
+    (index & (0x01 << position)) > 0
 }
 
 //get index sibling
@@ -153,20 +153,18 @@ fn calculate_merkle_root(
             len_second: get_generalized_index_length(index),
         });
     }
-    let mut root = leaf.as_bytes().to_vec();
+    let mut root = leaf;
 
-    for (i, leaf) in proof.iter().enumerate() {
+    for (i, &proof_step) in proof.iter().enumerate() {
         if get_generalized_index_bit(index, i) {
             //select how leaf's are concated
-            let input = concat(leaf.as_bytes().to_vec(), root);
-            root = hash(&input);
+            root = hash_and_concat(proof_step , root);
         } else {
-            let mut input = root;
-            input.extend_from_slice(leaf.as_bytes());
-            root = hash(&input);
+            root = hash_and_concat(root , proof_step);
+
         }
     }
-    Ok(H256::from_slice(&root))
+    Ok(root)
 }
 
 pub fn verify_merkle_multiproof(
@@ -332,10 +330,10 @@ mod tests {
 
     #[test]
     fn verify_merkle_proof_test() {
-        let fourth = H256::from([0xAA; 32]);
-        let fifth = H256::from([0xBB; 32]);
-        let sixth = H256::from([0xCC; 32]);
-        let seventh = H256::from([0xDD; 32]);
+        let fourth = H256::random();
+        let fifth = H256::random();
+        let sixth = H256::random();
+        let seventh = H256::random();
 
         let third = hash_and_concat(fourth, fifth);
         let second = hash_and_concat(sixth, seventh);
@@ -429,10 +427,10 @@ mod tests {
 
     #[test]
     fn verify_merkle_multiproof_first_test() {
-        let fourth = H256::from([0xAA; 32]);
-        let fifth = H256::from([0xBB; 32]);
-        let sixth = H256::from([0xCC; 32]);
-        let seventh = H256::from([0xDD; 32]);
+        let fourth = H256::random();
+        let fifth = H256::random();
+        let sixth = H256::random();
+        let seventh = H256::random();
 
         let third = hash_and_concat(fourth, fifth);
         let second = hash_and_concat(sixth, seventh);
@@ -505,10 +503,10 @@ mod tests {
 
     #[test]
     fn verify_merkle_multiproof_second_test() {
-        let fourth = H256::from([0xAA; 32]);
-        let fifth = H256::from([0xBB; 32]);
-        let sixth = H256::from([0xCC; 32]);
-        let seventh = H256::from([0xDD; 32]);
+        let fourth = H256::random();
+        let fifth = H256::random();
+        let sixth = H256::random();
+        let seventh = H256::random();
 
         let third = hash_and_concat(fourth, fifth);
         let second = hash_and_concat(sixth, seventh);
@@ -579,18 +577,18 @@ mod tests {
 
     #[test]
     fn verify_merkle_proof_bigger_test() {
-        let eighth = H256::from([0xAA; 32]);
-        let ninth = H256::from([0xBB; 32]);
-        let tenth = H256::from([0xCC; 32]);
-        let eleventh = H256::from([0xDD; 32]);
+        let eighth = H256::random();
+        let ninth = H256::random();
+        let tenth = H256::random();
+        let eleventh = H256::random();
 
         let fourth = hash_and_concat(eighth, ninth);
         let fifth = hash_and_concat(tenth, eleventh);
 
-        let twelfth = H256::from([0xEE; 32]);
-        let thirteenth = H256::from([0xFF; 32]);
-        let fourteenth = H256::from([0xAA; 32]);
-        let fifteenth = H256::from([0xBB; 32]);
+        let twelfth = H256::random();
+        let thirteenth = H256::random();
+        let fourteenth = H256::random();
+        let fifteenth = H256::random();
 
         let sixth = hash_and_concat(twelfth, thirteenth);
         let seventh = hash_and_concat(fourteenth, fifteenth);
