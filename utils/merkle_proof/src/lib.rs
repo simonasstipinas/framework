@@ -47,7 +47,7 @@ fn fill_zero_hashes() -> Vec<H256> {
 fn calc_merkle_tree_from_leaves(leaves: &[H256], layer_count: usize) -> Vec<H256> {
     let mut leaves_list = leaves.to_vec();
     let mut tree = leaves_list.clone();
-    let mut zerohashes = fill_zero_hashes();
+    let zerohashes = fill_zero_hashes();
     for h in 0..layer_count {
         if leaves_list.len() % 2 == 1 {
             leaves_list.push(zerohashes[h]);
@@ -67,7 +67,7 @@ fn get_concated_list(nodes: Vec<H256>) -> Vec<H256> {
 }
 
 fn get_merkle_root(leaves: Vec<H256>, pad_to: usize) -> H256 {
-    let mut zerohashes = fill_zero_hashes();
+    let zerohashes = fill_zero_hashes();
     if pad_to == 0usize {
         let some = zerohashes[0usize];
         some
