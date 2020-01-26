@@ -52,13 +52,13 @@ fn calc_merkle_tree_from_leaves(leaves: &[H256], layer_count: usize) -> Vec<H256
         if leaves_list.len() % 2 == 1 {
             leaves_list.push(zerohashes[h]);
         }
-        leaves_list = get_concated_list(leaves_list);
+        leaves_list = get_concated_list(&leaves_list);
         tree.append(&mut leaves_list.clone());
     }
     tree
 }
 
-fn get_concated_list(nodes: Vec<H256>) -> Vec<H256> {
+fn get_concated_list(nodes: &[H256]) -> Vec<H256> {
     let mut nodes_answer: Vec<H256> = vec![];
     for x in (0..nodes.len()).step_by(2) {
         nodes_answer.push(hash_and_concat(nodes[x], nodes[x + 1]));
@@ -66,11 +66,11 @@ fn get_concated_list(nodes: Vec<H256>) -> Vec<H256> {
     nodes_answer
 }
 
-fn get_merkle_root(leaves: Vec<H256>, pad_to: usize) -> H256 {
+fn get_merkle_root(leaves: &[H256], pad_to: usize) -> H256 {
     let zerohashes = fill_zero_hashes();
     if pad_to == 0_usize {
         zerohashes[0_usize]
-    } else if leaves.len() == 0 {
+    } else if leaves.is_empty() {
         let layer_count = log_of!(pad_to, 2., usize);
         zerohashes[layer_count]
     } else {
@@ -82,7 +82,7 @@ fn get_merkle_root(leaves: Vec<H256>, pad_to: usize) -> H256 {
 
 fn e(mut v: u8) -> H256 {
     if v == 0 {
-        v = v + 1;
+        v += 1;
     }
     H256::repeat_byte(v)
 }
@@ -109,7 +109,7 @@ fn return_chunks(count: u8) -> Vec<H256> {
 
 fn test_get_merkle_root(count: u8, limit: usize, value: H256) -> bool {
     let chunks = return_chunks(count);
-    get_merkle_root(chunks, limit) == value
+    get_merkle_root(&chunks, limit) == value
 }
 
 //returns previous power of 2
@@ -366,6 +366,10 @@ mod tests {
             test_get_merkle_root(1, 8, h(h(h(e(0), z(0)), z(1)), z(2))),
             true
         );
+    }
+
+    #[test]
+    fn test_get_merkle_root_test_2() {
         assert_eq!(
             test_get_merkle_root(2, 8, h(h(h(e(0), e(1)), z(1)), z(2))),
             true
