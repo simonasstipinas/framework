@@ -31,6 +31,89 @@ fn hash_and_concat(h1: H256, h2: H256) -> H256 {
         h2.as_bytes().to_vec(),
     )))
 }
+
+//Testing functions
+fn fill_zero_hashes() -> Vec<H256> {
+    let mut zerohashes = vec![H256::zero()];
+    for layer in 1..100 {
+        zerohashes.push(hash_and_concat(
+            zerohashes[layer - 1],
+            zerohashes[layer - 1],
+        ));
+    }
+    zerohashes
+}
+
+fn calc_merkle_tree_from_leaves(leaves: &[H256], layer_count: usize) -> Vec<H256> {
+    let mut leaves_list = leaves.to_vec();
+    let mut tree = leaves_list.clone();
+    let mut zerohashes = fill_zero_hashes();
+    for h in 0..layer_count {
+        if leaves_list.len() % 2 == 1 {
+            leaves_list.push(zerohashes[h]);
+        }
+        leaves_list = get_concated_list(leaves_list);
+        tree.append(&mut leaves_list.clone());
+    }
+    tree
+}
+
+fn get_concated_list(nodes: Vec<H256>) -> Vec<H256> {
+    let mut nodes_answer: Vec<H256> = vec![];
+    for x in (0..nodes.len()).step_by(2) {
+        nodes_answer.push(hash_and_concat(nodes[x], nodes[x + 1]));
+    }
+    nodes_answer
+}
+
+fn get_merkle_root(leaves: Vec<H256>, pad_to: usize) -> H256 {
+    let mut zerohashes = fill_zero_hashes();
+    if pad_to == 0usize {
+        let some = zerohashes[0usize];
+        some
+    } else if leaves.len() == 0 {
+        let layer_count = log_of!(pad_to, 2., usize);
+        zerohashes[layer_count]
+    } else {
+        let layer_count = log_of!(pad_to, 2., usize);
+        println!("{}", layer_count);
+        let answer = calc_merkle_tree_from_leaves(&leaves, layer_count);
+        answer[answer.len() - 1]
+    }
+}
+
+fn e(mut v: u8) -> H256 {
+    if v == 0 {
+        v = v + 1;
+    }
+    H256::repeat_byte(v)
+}
+
+fn z(i: usize) -> H256 {
+    let zerohashes = fill_zero_hashes();
+    zerohashes[i]
+}
+
+fn h(h1: H256, h2: H256) -> H256 {
+    H256::from_slice(&hash(&concat(
+        h1.as_bytes().to_vec(),
+        h2.as_bytes().to_vec(),
+    )))
+}
+
+fn return_chunks(count: u8) -> Vec<H256> {
+    let mut chunks: Vec<H256> = vec![];
+    for x in 0..count {
+        chunks.push(e(x));
+    }
+    chunks
+}
+
+fn test_get_merkle_root(count: u8, limit: usize, value: H256) -> bool {
+    let chunks = return_chunks(count);
+    get_merkle_root(chunks, limit) == value
+}
+
 //returns previous power of 2
 fn get_previous_power_of_two(x: usize) -> usize {
     if x <= 2 {
@@ -257,6 +340,175 @@ fn calculate_multi_merkle_root(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_merkle_root_test() {
+        assert_eq!(test_get_merkle_root(0, 0, z(0)), true);
+        assert_eq!(test_get_merkle_root(0, 1, z(0)), true);
+        assert_eq!(test_get_merkle_root(1, 1, e(0)), true);
+        assert_eq!(test_get_merkle_root(0, 2, h(z(0), z(0))), true);
+        assert_eq!(test_get_merkle_root(1, 2, h(e(0), z(0))), true);
+        assert_eq!(test_get_merkle_root(2, 2, h(e(0), e(1))), true);
+        assert_eq!(test_get_merkle_root(0, 4, h(h(z(0), z(0)), z(1))), true);
+        assert_eq!(test_get_merkle_root(1, 4, h(h(e(0), z(0)), z(1))), true);
+        assert_eq!(test_get_merkle_root(2, 4, h(h(e(0), e(1)), z(1))), true);
+        assert_eq!(
+            test_get_merkle_root(3, 4, h(h(e(0), e(1)), h(e(2), z(0)))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(4, 4, h(h(e(0), e(1)), h(e(2), e(3)))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(0, 8, h(h(h(z(0), z(0)), z(1)), z(2))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(1, 8, h(h(h(e(0), z(0)), z(1)), z(2))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(2, 8, h(h(h(e(0), e(1)), z(1)), z(2))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(3, 8, h(h(h(e(0), e(1)), h(e(2), z(0))), z(2))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(4, 8, h(h(h(e(0), e(1)), h(e(2), e(3))), z(2))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                5,
+                8,
+                h(h(h(e(0), e(1)), h(e(2), e(3))), h(h(e(4), z(0)), z(1)))
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                6,
+                8,
+                h(
+                    h(h(e(0), e(1)), h(e(2), e(3))),
+                    h(h(e(4), e(5)), h(z(0), z(0)))
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                7,
+                8,
+                h(
+                    h(h(e(0), e(1)), h(e(2), e(3))),
+                    h(h(e(4), e(5)), h(e(6), z(0)))
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                8,
+                8,
+                h(
+                    h(h(e(0), e(1)), h(e(2), e(3))),
+                    h(h(e(4), e(5)), h(e(6), e(7)))
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(0, 16, h(h(h(h(z(0), z(0)), z(1)), z(2)), z(3))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(1, 16, h(h(h(h(e(0), z(0)), z(1)), z(2)), z(3))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(2, 16, h(h(h(h(e(0), e(1)), z(1)), z(2)), z(3))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(3, 16, h(h(h(h(e(0), e(1)), h(e(2), z(0))), z(2)), z(3))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(4, 16, h(h(h(h(e(0), e(1)), h(e(2), e(3))), z(2)), z(3))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                5,
+                16,
+                h(
+                    h(h(h(e(0), e(1)), h(e(2), e(3))), h(h(e(4), z(0)), z(1))),
+                    z(3)
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                6,
+                16,
+                h(
+                    h(
+                        h(h(e(0), e(1)), h(e(2), e(3))),
+                        h(h(e(4), e(5)), h(z(0), z(0)))
+                    ),
+                    z(3)
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                7,
+                16,
+                h(
+                    h(
+                        h(h(e(0), e(1)), h(e(2), e(3))),
+                        h(h(e(4), e(5)), h(e(6), z(0)))
+                    ),
+                    z(3)
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                8,
+                16,
+                h(
+                    h(
+                        h(h(e(0), e(1)), h(e(2), e(3))),
+                        h(h(e(4), e(5)), h(e(6), e(7)))
+                    ),
+                    z(3)
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                9,
+                16,
+                h(
+                    h(
+                        h(h(e(0), e(1)), h(e(2), e(3))),
+                        h(h(e(4), e(5)), h(e(6), e(7)))
+                    ),
+                    h(h(h(e(8), z(0)), z(1)), z(2))
+                )
+            ),
+            true
+        );
+    }
 
     #[test]
     fn get_previous_power_of_two_test() {
