@@ -371,75 +371,6 @@ mod tests {
     #[test]
     fn test_get_merkle_root_test_2() {
         assert_eq!(
-            test_get_merkle_root(2, 8, h(h(h(e(0), e(1)), z(1)), z(2))),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(3, 8, h(h(h(e(0), e(1)), h(e(2), z(0))), z(2))),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(4, 8, h(h(h(e(0), e(1)), h(e(2), e(3))), z(2))),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(
-                5,
-                8,
-                h(h(h(e(0), e(1)), h(e(2), e(3))), h(h(e(4), z(0)), z(1)))
-            ),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(
-                6,
-                8,
-                h(
-                    h(h(e(0), e(1)), h(e(2), e(3))),
-                    h(h(e(4), e(5)), h(z(0), z(0)))
-                )
-            ),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(
-                7,
-                8,
-                h(
-                    h(h(e(0), e(1)), h(e(2), e(3))),
-                    h(h(e(4), e(5)), h(e(6), z(0)))
-                )
-            ),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(
-                8,
-                8,
-                h(
-                    h(h(e(0), e(1)), h(e(2), e(3))),
-                    h(h(e(4), e(5)), h(e(6), e(7)))
-                )
-            ),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(0, 16, h(h(h(h(z(0), z(0)), z(1)), z(2)), z(3))),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(1, 16, h(h(h(h(e(0), z(0)), z(1)), z(2)), z(3))),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(2, 16, h(h(h(h(e(0), e(1)), z(1)), z(2)), z(3))),
-            true
-        );
-        assert_eq!(
-            test_get_merkle_root(3, 16, h(h(h(h(e(0), e(1)), h(e(2), z(0))), z(2)), z(3))),
-            true
-        );
-        assert_eq!(
             test_get_merkle_root(4, 16, h(h(h(h(e(0), e(1)), h(e(2), e(3))), z(2)), z(3))),
             true
         );
@@ -508,6 +439,79 @@ mod tests {
                     h(h(h(e(8), z(0)), z(1)), z(2))
                 )
             ),
+            true
+        );
+    }
+
+    #[test]
+    fn test_get_merkle_root_test_3() {
+        assert_eq!(
+            test_get_merkle_root(2, 8, h(h(h(e(0), e(1)), z(1)), z(2))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(3, 8, h(h(h(e(0), e(1)), h(e(2), z(0))), z(2))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(4, 8, h(h(h(e(0), e(1)), h(e(2), e(3))), z(2))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                5,
+                8,
+                h(h(h(e(0), e(1)), h(e(2), e(3))), h(h(e(4), z(0)), z(1)))
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                6,
+                8,
+                h(
+                    h(h(e(0), e(1)), h(e(2), e(3))),
+                    h(h(e(4), e(5)), h(z(0), z(0)))
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                7,
+                8,
+                h(
+                    h(h(e(0), e(1)), h(e(2), e(3))),
+                    h(h(e(4), e(5)), h(e(6), z(0)))
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(
+                8,
+                8,
+                h(
+                    h(h(e(0), e(1)), h(e(2), e(3))),
+                    h(h(e(4), e(5)), h(e(6), e(7)))
+                )
+            ),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(0, 16, h(h(h(h(z(0), z(0)), z(1)), z(2)), z(3))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(1, 16, h(h(h(h(e(0), z(0)), z(1)), z(2)), z(3))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(2, 16, h(h(h(h(e(0), e(1)), z(1)), z(2)), z(3))),
+            true
+        );
+        assert_eq!(
+            test_get_merkle_root(3, 16, h(h(h(h(e(0), e(1)), h(e(2), z(0))), z(2)), z(3))),
             true
         );
     }
