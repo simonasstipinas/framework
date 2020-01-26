@@ -854,7 +854,12 @@ mod tests {
         let second = hash_and_concat(fourth, fifth);
         let third = hash_and_concat(sixth, seventh);
 
-        let root = get_merkle_root(&[eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth], 8);
+        let root = get_merkle_root(
+            &[
+                eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth,
+            ],
+            8,
+        );
 
         assert_eq!(
             get_path_indices(15_usize),
