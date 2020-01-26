@@ -591,12 +591,12 @@ mod tests {
         let fourth = H256::random();
         let fifth = H256::random();
         let sixth = H256::random();
-        let seventh = H256::random();
+        let seventh = H256::zero();
 
         let third = hash_and_concat(fourth, fifth);
         let second = hash_and_concat(sixth, seventh);
 
-        let root = get_merkle_root(&[fourth, fifth, sixth, seventh], 4);
+        let root = get_merkle_root(&[fourth, fifth, sixth], 4);
 
         assert_eq!(
             verify_merkle_proof(fourth, &[fifth, second], 0, 4, root)
