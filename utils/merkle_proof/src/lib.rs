@@ -591,12 +591,12 @@ mod tests {
         let fourth = H256::random();
         let fifth = H256::random();
         let sixth = H256::random();
-        let seventh = H256::random();
+        let seventh = H256::zero();
 
         let third = hash_and_concat(fourth, fifth);
         let second = hash_and_concat(sixth, seventh);
 
-        let root = hash_and_concat(third, second);
+        let root = get_merkle_root(&[fourth, fifth, sixth], 4);
 
         assert_eq!(
             verify_merkle_proof(fourth, &[fifth, second], 0, 4, root)
@@ -690,10 +690,10 @@ mod tests {
         let sixth = H256::random();
         let seventh = H256::random();
 
-        let third = hash_and_concat(fourth, fifth);
+        let _third = hash_and_concat(fourth, fifth);
         let second = hash_and_concat(sixth, seventh);
 
-        let root = hash_and_concat(third, second);
+        let root = get_merkle_root(&[fourth, fifth, sixth, seventh], 4);
 
         assert_eq!(
             verify_merkle_multiproof(
@@ -769,7 +769,7 @@ mod tests {
         let third = hash_and_concat(fourth, fifth);
         let second = hash_and_concat(sixth, seventh);
 
-        let root = hash_and_concat(third, second);
+        let root = get_merkle_root(&[fourth, fifth, sixth, seventh], 4);
 
         assert_eq!(
             verify_merkle_multiproof(&[sixth], &[seventh, third], &[6], root)
@@ -851,10 +851,15 @@ mod tests {
         let sixth = hash_and_concat(twelfth, thirteenth);
         let seventh = hash_and_concat(fourteenth, fifteenth);
 
-        let second = hash_and_concat(fourth, fifth);
+        let _second = hash_and_concat(fourth, fifth);
         let third = hash_and_concat(sixth, seventh);
 
-        let root = hash_and_concat(second, third);
+        let root = get_merkle_root(
+            &[
+                eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth,
+            ],
+            8,
+        );
 
         assert_eq!(
             get_path_indices(15_usize),
