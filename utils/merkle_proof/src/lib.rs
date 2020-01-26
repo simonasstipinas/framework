@@ -68,15 +68,13 @@ fn get_concated_list(nodes: Vec<H256>) -> Vec<H256> {
 
 fn get_merkle_root(leaves: Vec<H256>, pad_to: usize) -> H256 {
     let zerohashes = fill_zero_hashes();
-    if pad_to == 0usize {
-        let some = zerohashes[0usize];
-        some
+    if pad_to == 0_usize {
+        zerohashes[0_usize]
     } else if leaves.len() == 0 {
         let layer_count = log_of!(pad_to, 2., usize);
         zerohashes[layer_count]
     } else {
         let layer_count = log_of!(pad_to, 2., usize);
-        println!("{}", layer_count);
         let answer = calc_merkle_tree_from_leaves(&leaves, layer_count);
         answer[answer.len() - 1]
     }
