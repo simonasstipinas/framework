@@ -75,7 +75,7 @@ fn get_merkle_root(leaves: &[H256], pad_to: usize) -> H256 {
         zerohashes[layer_count]
     } else {
         let layer_count = log_of!(pad_to, 2., usize);
-        let answer = calc_merkle_tree_from_leaves(&leaves, layer_count);
+        let answer = calc_merkle_tree_from_leaves(leaves, layer_count);
         answer[answer.len() - 1]
     }
 }
