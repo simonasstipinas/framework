@@ -48,9 +48,10 @@ fn calc_merkle_tree_from_leaves(leaves: &[H256], layer_count: usize) -> Vec<H256
     let mut leaves_list = leaves.to_vec();
     let mut tree = leaves_list.clone();
     let zerohashes = fill_zero_hashes();
-    for h in 0..layer_count {
+    for item in zerohashes.iter().take(layer_count) {
         if leaves_list.len() % 2 == 1 {
-            leaves_list.push(zerohashes[h]);
+            let zerohash = item.clone();
+            leaves_list.push(zerohash);
         }
         leaves_list = get_concated_list(&leaves_list);
         tree.append(&mut leaves_list.clone());
