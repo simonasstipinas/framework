@@ -36,7 +36,7 @@ then
 fi
 cargo install-update --allow-no-update cargo-tarpaulin cargo-update
 
-cargo update
+cargo update --locked
 cargo fmt --all -- --check
 cargo clippy                                      \
     --profile test                                \
